@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QPushButton, QL
                             QTabWidget, QGridLayout, QTextEdit, QSpinBox, QDoubleSpinBox, 
                             QComboBox, QColorDialog)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap, QImage, QTextCursor, QTextCharFormat
 import fitz  # PyMuPDF
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QKeySequence
@@ -1035,43 +1035,42 @@ class PDFCombiner(QMainWindow):
         """Update the displayed page with current zoom and rotation"""
         if not self.current_doc:
             return
-            
+
         # Update page label
         self.page_label.setText(f"Page {self.current_page + 1} of {self.total_pages}")
-        
+
         # Enable/disable navigation buttons
         self.prev_button.setEnabled(self.current_page > 0)
         self.next_button.setEnabled(self.current_page < self.total_pages - 1)
-        
+
         # Load and display current page
         page = self.current_doc.load_page(self.current_page)
-        
+
         # Extract text for display
         text = page.get_text("text")
         self.text_display.setPlainText(text)
-        
+
+        # Highlight search results on the current page
+        self.highlight_search_results()
+
         # Create pixmap with current zoom and rotation
         zoom = 2 * self.current_zoom
         mat = fitz.Matrix(zoom, zoom).prerotate(self.current_rotation)
         pix = page.get_pixmap(matrix=mat)
-        
+
         # Convert to QImage
         img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(img)
-        
+
         # Create label to display the image
         if hasattr(self, 'page_label_widget'):
             self.preview_layout.removeWidget(self.page_label_widget)
             self.page_label_widget.deleteLater()
-            
+
         self.page_label_widget = QLabel()
         self.page_label_widget.setPixmap(pixmap)
         self.page_label_widget.setAlignment(Qt.AlignCenter)
         self.preview_layout.insertWidget(0, self.page_label_widget)
-        
-        # Highlight search results if any
-        if self.search_results:
-            self.highlight_search_results()
 
     def change_page(self, delta):
         """Change the current page by delta (1 or -1)"""
@@ -1095,64 +1094,91 @@ class PDFCombiner(QMainWindow):
         """Rotate the current page by degrees"""
         self.current_rotation = (self.current_rotation + degrees) % 360
         self.update_page_display()
-        
+
     def search_text(self):
         """Search for text in the current document"""
         search_term = self.search_edit.text()
         if not search_term:
             return
-            
+
+        # Clear previous search results
         self.search_results = []
         self.current_search_index = -1
-        
+
         # Search through all pages
         for page_num in range(self.total_pages):
             page = self.current_doc.load_page(page_num)
             text_instances = page.search_for(search_term)
-            for inst in text_instances:
-                self.search_results.append((page_num, inst))
-                
+            for rect in text_instances:
+                self.search_results.append((page_num, rect))
+
         if self.search_results:
             self.current_search_index = 0
             self.jump_to_search_result()
         else:
             QMessageBox.information(self, "Search", "No matches found.")
-            
+
     def jump_to_search_result(self):
         """Jump to current search result"""
         if not self.search_results or self.current_search_index < 0:
             return
-            
+
+        # Ensure the index is within bounds
+        if self.current_search_index >= len(self.search_results):
+            self.current_search_index = len(self.search_results) - 1
+
         page_num, rect = self.search_results[self.current_search_index]
         self.current_page = page_num
         self.update_page_display()
-        
+
         # Scroll to the search result
         zoom = 2 * self.current_zoom
         mat = fitz.Matrix(zoom, zoom).prerotate(self.current_rotation)
         mapped_rect = rect * mat
-        
+
         # Calculate scroll position
-        scroll_x = mapped_rect.x0
-        scroll_y = mapped_rect.y0
+        scroll_x = int(mapped_rect.x0)  # Convert to integer
+        scroll_y = int(mapped_rect.y0)  # Convert to integer
         self.scroll_area.ensureVisible(scroll_x, scroll_y)
+
+        # Highlight the search result
+        self.highlight_search_results()
         
     def highlight_search_results(self):
-        """Highlight all search results on current page"""
+        """Highlight search results in the text display"""
         if not self.search_results:
             return
-            
-        # Get current page results
+
+        # Get the current page's search results
         current_page_results = [r for r in self.search_results if r[0] == self.current_page]
-        
-        # Create highlight annotations
-        page = self.current_doc.load_page(self.current_page)
+
+        if not current_page_results:
+            return  # No results on this page
+
+        # Get the text from the QTextEdit widget
+        text = self.text_display.toPlainText()
+
+        # Create a QTextDocument and QTextCursor for highlighting
+        document = self.text_display.document()
+        cursor = QTextCursor(document)
+
+        # Clear previous highlights
+        cursor.select(QTextCursor.Document)
+        cursor.setCharFormat(QTextCharFormat())  # Reset formatting
+
+        # Highlight each search result
+        highlight_format = QTextCharFormat()
+        highlight_format.setBackground(QColor(255, 255, 0))  # Yellow background
+
         for _, rect in current_page_results:
-            annot = page.add_highlight_annot(rect)
-            annot.set_colors(stroke=(1, 1, 0))  # Yellow highlight
-            annot.update()
-            
-        self.update_page_display()
+            # Convert the rectangle to text position (if needed)
+            # This step depends on how the text is extracted and displayed
+            # For now, we'll highlight all occurrences of the search term
+            search_term = self.search_edit.text()
+            cursor = document.find(search_term, cursor)
+            while not cursor.isNull():
+                cursor.mergeCharFormat(highlight_format)
+                cursor = document.find(search_term, cursor)
         
     def focus_search(self):
         """Focus the search input field"""
