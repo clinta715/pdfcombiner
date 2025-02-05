@@ -44,7 +44,11 @@ class PDFCombiner(QMainWindow):
                     event.acceptProposedAction()
             
             def dropEvent(self, event):
-                self.parent().dropEvent(event)
+                for url in event.mimeData().urls():
+                    file_path = url.toLocalFile()
+                    if file_path.lower().endswith('.pdf'):
+                        self.parent().add_pdf(file_path)
+                event.acceptProposedAction()
         
         scroll = QScrollArea()
         self.thumbnail_widget = ThumbnailView(self)
