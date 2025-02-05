@@ -42,7 +42,7 @@ class PDFCombiner(QMainWindow):
                 # Create scroll area and thumbnail view
                 self.scroll = QScrollArea()
                 self.scroll.setWidgetResizable(True)
-                self.thumbnail_view = ThumbnailView(self)
+                self.thumbnail_view = ThumbnailView(self.parent(), self)
                 self.scroll.setWidget(self.thumbnail_view)
                 self.layout.addWidget(self.scroll)
             
@@ -54,8 +54,9 @@ class PDFCombiner(QMainWindow):
                 self.thumbnail_view.dropEvent(event)
         
         class ThumbnailView(QWidget):
-            def __init__(self, parent=None):
+            def __init__(self, main_window, parent=None):
                 super().__init__(parent)
+                self.main_window = main_window
                 self.setAcceptDrops(True)
                 self.layout = QGridLayout()
                 self.setLayout(self.layout)
@@ -68,8 +69,7 @@ class PDFCombiner(QMainWindow):
                 for url in event.mimeData().urls():
                     file_path = url.toLocalFile()
                     if file_path.lower().endswith('.pdf'):
-                        # Access the main window through the container
-                        self.parent().parent().parent().add_pdf(file_path)
+                        self.main_window.add_pdf(file_path)
                 event.acceptProposedAction()
         
         self.thumbnail_container = ThumbnailContainer(self)
