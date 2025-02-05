@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QListWidget, QVBoxLayout, 
                             QWidget, QPushButton, QHBoxLayout, QFileDialog, 
-                            QMessageBox, QGridLayout, QLabel)
+                            QMessageBox, QGridLayout, QLabel, QScrollArea)
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtGui import QPixmap, QDrag
 import resources_rc
@@ -32,10 +32,25 @@ class PDFCombiner(QMainWindow):
         self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
         
         # Thumbnail View
-        self.thumbnail_widget = QWidget()
-        self.thumbnail_layout = QGridLayout()
-        self.thumbnail_widget.setLayout(self.thumbnail_layout)
-        self.thumbnail_widget.setAcceptDrops(True)
+        class ThumbnailView(QWidget):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                self.setAcceptDrops(True)
+                self.layout = QGridLayout()
+                self.setLayout(self.layout)
+            
+            def dragEnterEvent(self, event):
+                if event.mimeData().hasUrls():
+                    event.acceptProposedAction()
+            
+            def dropEvent(self, event):
+                self.parent().dropEvent(event)
+        
+        scroll = QScrollArea()
+        self.thumbnail_widget = ThumbnailView(self)
+        scroll.setWidget(self.thumbnail_widget)
+        scroll.setWidgetResizable(True)
+        self.thumbnail_layout = self.thumbnail_widget.layout
         
         self.tabs.addTab(self.file_list, "List View")
         self.tabs.addTab(self.thumbnail_widget, "Thumbnail View")
