@@ -32,6 +32,27 @@ class PDFCombiner(QMainWindow):
         self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
         
         # Thumbnail View
+        class ThumbnailContainer(QWidget):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                self.setAcceptDrops(True)
+                self.layout = QVBoxLayout()
+                self.setLayout(self.layout)
+                
+                # Create scroll area and thumbnail view
+                self.scroll = QScrollArea()
+                self.scroll.setWidgetResizable(True)
+                self.thumbnail_view = ThumbnailView(self)
+                self.scroll.setWidget(self.thumbnail_view)
+                self.layout.addWidget(self.scroll)
+            
+            def dragEnterEvent(self, event):
+                if event.mimeData().hasUrls():
+                    event.acceptProposedAction()
+            
+            def dropEvent(self, event):
+                self.thumbnail_view.dropEvent(event)
+        
         class ThumbnailView(QWidget):
             def __init__(self, parent=None):
                 super().__init__(parent)
@@ -47,17 +68,14 @@ class PDFCombiner(QMainWindow):
                 for url in event.mimeData().urls():
                     file_path = url.toLocalFile()
                     if file_path.lower().endswith('.pdf'):
-                        self.parent().add_pdf(file_path)
+                        self.parent().parent().add_pdf(file_path)
                 event.acceptProposedAction()
         
-        scroll = QScrollArea()
-        self.thumbnail_widget = ThumbnailView(self)
-        scroll.setWidget(self.thumbnail_widget)
-        scroll.setWidgetResizable(True)
-        self.thumbnail_layout = self.thumbnail_widget.layout
+        self.thumbnail_container = ThumbnailContainer(self)
+        self.thumbnail_layout = self.thumbnail_container.thumbnail_view.layout
         
         self.tabs.addTab(self.file_list, "List View")
-        self.tabs.addTab(self.thumbnail_widget, "Thumbnail View")
+        self.tabs.addTab(self.thumbnail_container, "Thumbnail View")
 
         layout = QVBoxLayout()
         layout.addWidget(self.tabs)
