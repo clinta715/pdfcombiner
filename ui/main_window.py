@@ -1,4 +1,10 @@
-from PyQt5.QtWidgets import QMainWindow, QTabWidget, QListWidget, QVBoxLayout, QWidget, QPushButton, QHBoxLayout, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import (QMainWindow, QTabWidget, QListWidget, QVBoxLayout, 
+                            QWidget, QPushButton, QHBoxLayout, QFileDialog, 
+                            QMessageBox, QGridLayout, QLabel)
+from PyQt5.QtCore import Qt, QMimeData
+from PyQt5.QtGui import QPixmap, QDrag
+import resources_rc
+import os
 from ui.progress_dialog import ProgressDialog
 from batch.batch_processor import BatchProcessor
 from operations.pdf_operations import PDFOperations
@@ -18,8 +24,21 @@ class PDFCombiner(QMainWindow):
 
         # Initialize UI components
         self.tabs = QTabWidget()
+        
+        # List View
         self.file_list = QListWidget()
+        self.file_list.setAcceptDrops(True)
+        self.file_list.setDragEnabled(True)
+        self.file_list.setSelectionMode(QListWidget.ExtendedSelection)
+        
+        # Thumbnail View
+        self.thumbnail_widget = QWidget()
+        self.thumbnail_layout = QGridLayout()
+        self.thumbnail_widget.setLayout(self.thumbnail_layout)
+        self.thumbnail_widget.setAcceptDrops(True)
+        
         self.tabs.addTab(self.file_list, "List View")
+        self.tabs.addTab(self.thumbnail_widget, "Thumbnail View")
 
         layout = QVBoxLayout()
         layout.addWidget(self.tabs)
@@ -39,6 +58,37 @@ class PDFCombiner(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        for url in event.mimeData().urls():
+            file_path = url.toLocalFile()
+            if file_path.lower().endswith('.pdf'):
+                self.add_pdf(file_path)
+        event.acceptProposedAction()
+
+    def add_pdf(self, file_path):
+        if file_path not in self.pdf_files:
+            self.pdf_files.append(file_path)
+            self.file_list.addItem(file_path)
+            self.add_thumbnail(file_path)
+
+    def add_thumbnail(self, file_path):
+        # Create a thumbnail label
+        thumbnail = QLabel()
+        thumbnail.setPixmap(QPixmap(":/icons/pdf_icon.png").scaled(100, 100, Qt.KeepAspectRatio))
+        thumbnail.setAlignment(Qt.AlignCenter)
+        thumbnail.setStyleSheet("border: 1px solid gray; padding: 5px;")
+        thumbnail.setToolTip(file_path)
+        
+        # Add to grid layout
+        position = self.thumbnail_layout.count()
+        row = position // 3
+        col = position % 3
+        self.thumbnail_layout.addWidget(thumbnail, row, col)
+
     def remove_selected(self):
         selected_items = self.file_list.selectedItems()
         if not selected_items:
@@ -51,6 +101,13 @@ class PDFCombiner(QMainWindow):
             if file_path in self.page_ranges:
                 del self.page_ranges[file_path]
             self.file_list.takeItem(self.file_list.row(item))
+            
+            # Remove corresponding thumbnail
+            for i in reversed(range(self.thumbnail_layout.count())):
+                widget = self.thumbnail_layout.itemAt(i).widget()
+                if widget and widget.toolTip() == file_path:
+                    widget.deleteLater()
+                    self.thumbnail_layout.removeWidget(widget)
 
     def combine_pdfs(self):
         if not self.pdf_files:
