@@ -68,7 +68,8 @@ class PDFCombiner(QMainWindow):
                 for url in event.mimeData().urls():
                     file_path = url.toLocalFile()
                     if file_path.lower().endswith('.pdf'):
-                        self.parent().parent().add_pdf(file_path)
+                        # Access the main window through the container
+                        self.parent().parent().parent().add_pdf(file_path)
                 event.acceptProposedAction()
         
         self.thumbnail_container = ThumbnailContainer(self)
