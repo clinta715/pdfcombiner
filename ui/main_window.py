@@ -1,5 +1,7 @@
 import os
+import sys
 from PyQt6.QtWidgets import (
+    QInputDialog,
     QMainWindow, QTabWidget, QListWidget, QVBoxLayout, QWidget, QPushButton,
     QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel
 )
@@ -282,6 +284,57 @@ class PDFCombiner(QMainWindow):
         """Show documentation"""
         QMessageBox.information(self, "Documentation", 
                               "Documentation is available at:\nhttps://github.com/your-repo/pdfcombiner")
+
+    def preview_pdf(self):
+        """Preview the selected PDF file"""
+        selected_items = self.file_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a PDF file to preview.")
+            return
+        
+        file_path = selected_items[0].text()
+        try:
+            # Open the PDF in the default viewer
+            import subprocess
+            if sys.platform == "win32":
+                os.startfile(file_path)
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                subprocess.call([opener, file_path])
+        except Exception as e:
+            QMessageBox.critical(self, "Preview Error", f"Could not open PDF: {str(e)}")
+
+    def perform_ocr(self):
+        """Perform OCR on the selected PDF"""
+        selected_items = self.file_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a PDF file to perform OCR.")
+            return
+        
+        file_path = selected_items[0].text()
+        try:
+            # Call the existing OCR functionality
+            output_path = self.pdf_operations.perform_ocr(file_path)
+            QMessageBox.information(self, "OCR Complete", f"OCR completed successfully!\nOutput saved to: {output_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "OCR Error", f"Error performing OCR: {str(e)}")
+
+    def encrypt_pdf(self):
+        """Encrypt the selected PDF with a password"""
+        selected_items = self.file_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a PDF file to encrypt.")
+            return
+        
+        file_path = selected_items[0].text()
+        password, ok = QInputDialog.getText(self, 'Encrypt PDF', 'Enter password:')
+        if ok and password:
+            try:
+                # Call the existing encryption functionality
+                output_path = self.pdf_operations.encrypt_pdf(file_path, password)
+                QMessageBox.information(self, "Encryption Complete", f"PDF encrypted successfully!\nOutput saved to: {output_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Encryption Error", f"Error encrypting PDF: {str(e)}")
 
     def combine_pdfs(self):
         """Combine selected PDF files"""
