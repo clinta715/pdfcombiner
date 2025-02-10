@@ -220,6 +220,14 @@ class PDFCombiner(QMainWindow):
         rotate_action.triggered.connect(self.rotate_pages)
         compress_action = tools_menu.addAction('Compress PDF')
         compress_action.triggered.connect(self.compress_pdf)
+        
+        # Add existing functionality to Tools menu
+        preview_action = tools_menu.addAction('Preview PDF')
+        preview_action.triggered.connect(self.preview_pdf)
+        ocr_action = tools_menu.addAction('Perform OCR')
+        ocr_action.triggered.connect(self.perform_ocr)
+        encrypt_action = tools_menu.addAction('Encrypt PDF')
+        encrypt_action.triggered.connect(self.encrypt_pdf)
 
         # Help Menu
         help_menu = menubar.addMenu('Help')
