@@ -21,6 +21,7 @@ class PDFCombiner(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('PDF Combiner')
+        self.create_main_menu()
         self.setGeometry(100, 100, 800, 600)
 
         # Enable drag and drop
@@ -189,6 +190,90 @@ class PDFCombiner(QMainWindow):
 
         # Update thumbnail view after removal
         self.update_thumbnail_view()
+
+    def create_main_menu(self):
+        """Create the main application menu"""
+        menubar = self.menuBar()
+        
+        # File Menu
+        file_menu = menubar.addMenu('File')
+        open_action = file_menu.addAction('Open PDF')
+        open_action.triggered.connect(self.open_pdf)
+        save_action = file_menu.addAction('Save Combined PDF')
+        save_action.triggered.connect(self.combine_pdfs)
+        file_menu.addSeparator()
+        exit_action = file_menu.addAction('Exit')
+        exit_action.triggered.connect(self.close)
+
+        # Edit Menu
+        edit_menu = menubar.addMenu('Edit')
+        remove_action = edit_menu.addAction('Remove Selected')
+        remove_action.triggered.connect(self.remove_selected)
+        clear_action = edit_menu.addAction('Clear List')
+        clear_action.triggered.connect(self.clear_list)
+
+        # Tools Menu
+        tools_menu = menubar.addMenu('Tools')
+        split_action = tools_menu.addAction('Split PDF')
+        split_action.triggered.connect(self.split_pdf)
+        rotate_action = tools_menu.addAction('Rotate Pages')
+        rotate_action.triggered.connect(self.rotate_pages)
+        compress_action = tools_menu.addAction('Compress PDF')
+        compress_action.triggered.connect(self.compress_pdf)
+
+        # Help Menu
+        help_menu = menubar.addMenu('Help')
+        about_action = help_menu.addAction('About')
+        about_action.triggered.connect(self.show_about)
+        docs_action = help_menu.addAction('Documentation')
+        docs_action.triggered.connect(self.show_documentation)
+
+    def open_pdf(self):
+        """Open individual PDF files"""
+        files, _ = QFileDialog.getOpenFileNames(self, "Open PDF Files", "", "PDF Files (*.pdf)")
+        if files:
+            for file_path in files:
+                if file_path not in self.pdf_files:
+                    self.pdf_files.append(file_path)
+                    self.file_list.addItem(file_path)
+                    self.page_ranges[file_path] = "all"
+            self.update_thumbnail_view()
+
+    def clear_list(self):
+        """Clear the entire file list"""
+        reply = QMessageBox.question(self, 'Clear List',
+                                   'Are you sure you want to clear the file list?',
+                                   QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        if reply == QMessageBox.StandardButton.Yes:
+            self.pdf_files.clear()
+            self.file_list.clear()
+            self.page_ranges.clear()
+            self.update_thumbnail_view()
+
+    def split_pdf(self):
+        """Split PDF into individual pages"""
+        # TODO: Implement PDF splitting functionality
+        QMessageBox.information(self, "Coming Soon", "PDF splitting feature will be available in the next version")
+
+    def rotate_pages(self):
+        """Rotate pages in PDF"""
+        # TODO: Implement page rotation functionality
+        QMessageBox.information(self, "Coming Soon", "Page rotation feature will be available in the next version")
+
+    def compress_pdf(self):
+        """Compress PDF file size"""
+        # TODO: Implement PDF compression functionality
+        QMessageBox.information(self, "Coming Soon", "PDF compression feature will be available in the next version")
+
+    def show_about(self):
+        """Show about dialog"""
+        QMessageBox.about(self, "About PDFCombiner", 
+                         "PDFCombiner\nVersion 1.0\n\nA comprehensive PDF management tool")
+
+    def show_documentation(self):
+        """Show documentation"""
+        QMessageBox.information(self, "Documentation", 
+                              "Documentation is available at:\nhttps://github.com/your-repo/pdfcombiner")
 
     def combine_pdfs(self):
         """Combine selected PDF files"""
