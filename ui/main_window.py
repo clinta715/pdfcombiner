@@ -28,6 +28,10 @@ class PDFCombiner(QMainWindow):
 
         # Enable drag and drop
         self.setAcceptDrops(True)
+        self.file_list.setAcceptDrops(True)
+        self.file_list.setDragEnabled(True)
+        self.file_list.setDropIndicatorShown(True)
+        self.file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
 
         # Initialize UI components
         self.tabs = QTabWidget()
@@ -98,8 +102,14 @@ class PDFCombiner(QMainWindow):
             event.ignore()
 
     def dropEvent(self, event):
-        """Handle drop event to add PDF files to the list"""
-        if event.mimeData().hasUrls():
+        """Handle drop event to add PDF files to the list or reorder existing ones"""
+        if event.source() == self.file_list:
+            # Handle internal reordering
+            super().dropEvent(event)
+            self.update_file_order_from_list()
+            event.acceptProposedAction()
+        elif event.mimeData().hasUrls():
+            # Handle external file drops
             for url in event.mimeData().urls():
                 file_path = url.toLocalFile()
                 if file_path.lower().endswith('.pdf'):
@@ -116,6 +126,13 @@ class PDFCombiner(QMainWindow):
             self.update_thumbnail_view()  # Update thumbnail view after adding files
         else:
             event.ignore()
+
+    def update_file_order_from_list(self):
+        """Update the internal file list order to match the QListWidget order"""
+        self.pdf_files = []
+        for index in range(self.file_list.count()):
+            file_path = self.file_list.item(index).text()
+            self.pdf_files.append(file_path)
 
     def update_thumbnail_view(self):
         """Update the thumbnail view with previews of the first page of each PDF"""
