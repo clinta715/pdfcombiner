@@ -26,15 +26,19 @@ class PDFCombiner(QMainWindow):
         self.create_main_menu()
         self.setGeometry(100, 100, 800, 600)
 
+        # Initialize UI components
+        self.tabs = QTabWidget()
+        
+        # Create file list
+        self.file_list = QListWidget()
+        self.file_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+
         # Enable drag and drop
         self.setAcceptDrops(True)
         self.file_list.setAcceptDrops(True)
         self.file_list.setDragEnabled(True)
         self.file_list.setDropIndicatorShown(True)
         self.file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
-
-        # Initialize UI components
-        self.tabs = QTabWidget()
 
         # List View
         self.file_list = QListWidget()
