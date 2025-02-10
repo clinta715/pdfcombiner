@@ -29,22 +29,16 @@ class PDFCombiner(QMainWindow):
         # Initialize UI components
         self.tabs = QTabWidget()
         
-        # Create file list
+        # Create file list with drag and drop enabled
         self.file_list = QListWidget()
         self.file_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-
-        # Enable drag and drop
-        self.setAcceptDrops(True)
-        self.file_list.setAcceptDrops(True)
-        self.file_list.setDragEnabled(True)
-        self.file_list.setDropIndicatorShown(True)
         self.file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        self.file_list.setDropIndicatorShown(True)
+        self.file_list.setDragEnabled(True)
+        self.file_list.setAcceptDrops(True)
 
-        # List View
-        self.file_list = QListWidget()
-        self.file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)  # Allow internal reordering
-        self.file_list.setDropIndicatorShown(True)  # Show drop indicator
-        self.file_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
+        # Enable drag and drop for the main window
+        self.setAcceptDrops(True)
 
         # Connect drag and drop events
         self.file_list.dragEnterEvent = self.dragEnterEvent
@@ -54,9 +48,15 @@ class PDFCombiner(QMainWindow):
         # Thumbnail View
         self.thumbnail_scroll = QScrollArea()
         self.thumbnail_container = QWidget()
+        self.thumbnail_container.setAcceptDrops(True)
         self.thumbnail_layout = QVBoxLayout(self.thumbnail_container)
         self.thumbnail_scroll.setWidget(self.thumbnail_container)
         self.thumbnail_scroll.setWidgetResizable(True)
+        
+        # Enable drag and drop for thumbnails
+        self.thumbnail_container.dragEnterEvent = self.dragEnterEvent
+        self.thumbnail_container.dragMoveEvent = self.dragMoveEvent
+        self.thumbnail_container.dropEvent = self.thumbnail_drop_event
 
         # Add tabs
         self.tabs.addTab(self.file_list, "List View")
@@ -137,6 +137,38 @@ class PDFCombiner(QMainWindow):
         for index in range(self.file_list.count()):
             file_path = self.file_list.item(index).text()
             self.pdf_files.append(file_path)
+        self.update_thumbnail_view()
+
+    def thumbnail_drop_event(self, event):
+        """Handle thumbnail reordering in the thumbnail view"""
+        if event.source() == self.thumbnail_container:
+            # Get the position of the drop
+            pos = event.position().toPoint()
+            target_widget = self.thumbnail_container.childAt(pos)
+            
+            if target_widget:
+                # Get the file path from the target widget
+                target_path = target_widget.property("filePath")
+                if target_path:
+                    # Find the index of the target
+                    target_index = self.pdf_files.index(target_path)
+                    
+                    # Get the source widget (the one being dragged)
+                    source_widget = self.thumbnail_container.findChild(QWidget, "draggedWidget")
+                    if source_widget:
+                        source_path = source_widget.property("filePath")
+                        if source_path:
+                            # Move the source before the target
+                            self.pdf_files.remove(source_path)
+                            self.pdf_files.insert(target_index, source_path)
+                            
+                            # Update both views
+                            self.update_file_order_from_list()
+                            self.update_thumbnail_view()
+                            event.acceptProposedAction()
+                            return
+        
+        event.ignore()
 
     def update_thumbnail_view(self):
         """Update the thumbnail view with previews of the first page of each PDF"""
