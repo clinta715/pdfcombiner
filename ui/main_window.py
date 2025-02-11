@@ -5,7 +5,8 @@ from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QListWidget, QVBoxLayout, QWidget, QPushButton,
     QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QMimeData
+from PyQt6.QtGui import QDrag
 from PyQt6.QtGui import QPixmap, QImage
 import fitz  # PyMuPDF
 from ui.progress_dialog import ProgressDialog
@@ -29,13 +30,14 @@ class PDFCombiner(QMainWindow):
         # Initialize UI components
         self.tabs = QTabWidget()
         
-        # Create file list with drag and drop enabled
+        # Create file list with enhanced drag and drop
         self.file_list = QListWidget()
         self.file_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         self.file_list.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.file_list.setDropIndicatorShown(True)
         self.file_list.setDragEnabled(True)
         self.file_list.setAcceptDrops(True)
+        self.file_list.setDefaultDropAction(Qt.DropAction.MoveAction)
 
         # Enable drag and drop for the main window
         self.setAcceptDrops(True)
@@ -144,29 +146,31 @@ class PDFCombiner(QMainWindow):
         if event.source() == self.thumbnail_container:
             # Get the position of the drop
             pos = event.position().toPoint()
-            target_widget = self.thumbnail_container.childAt(pos)
             
-            if target_widget:
-                # Get the file path from the target widget
-                target_path = target_widget.property("filePath")
-                if target_path:
-                    # Find the index of the target
-                    target_index = self.pdf_files.index(target_path)
+            # Find which thumbnail we're dropping over
+            target_index = -1
+            for i in range(self.thumbnail_layout.count()):
+                widget = self.thumbnail_layout.itemAt(i).widget()
+                if widget and widget.geometry().contains(pos):
+                    target_index = i
+                    break
+            
+            # Get the source widget (the one being dragged)
+            source_widget = self.thumbnail_container.findChild(QWidget, "draggedWidget")
+            if source_widget and target_index != -1:
+                source_path = source_widget.property("filePath")
+                if source_path:
+                    # Remove from current position
+                    self.pdf_files.remove(source_path)
                     
-                    # Get the source widget (the one being dragged)
-                    source_widget = self.thumbnail_container.findChild(QWidget, "draggedWidget")
-                    if source_widget:
-                        source_path = source_widget.property("filePath")
-                        if source_path:
-                            # Move the source before the target
-                            self.pdf_files.remove(source_path)
-                            self.pdf_files.insert(target_index, source_path)
-                            
-                            # Update both views
-                            self.update_file_order_from_list()
-                            self.update_thumbnail_view()
-                            event.acceptProposedAction()
-                            return
+                    # Insert at new position
+                    self.pdf_files.insert(target_index, source_path)
+                    
+                    # Update both views
+                    self.update_file_order_from_list()
+                    self.update_thumbnail_view()
+                    event.acceptProposedAction()
+                    return
         
         event.ignore()
 
@@ -206,8 +210,10 @@ class PDFCombiner(QMainWindow):
                 file_name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 thumbnail_layout.addWidget(file_name_label)
 
-                # Make the thumbnail clickable
+                # Make the thumbnail draggable
+                thumbnail_widget.setObjectName("draggedWidget")
                 thumbnail_widget.mousePressEvent = lambda event, path=pdf_file: self.select_thumbnail(path)
+                thumbnail_widget.mouseMoveEvent = self.thumbnail_mouse_move
 
                 # Add to thumbnail layout
                 self.thumbnail_layout.addWidget(thumbnail_widget)
@@ -218,6 +224,14 @@ class PDFCombiner(QMainWindow):
 
         # Add stretch to push thumbnails to the top
         self.thumbnail_layout.addStretch()
+
+    def thumbnail_mouse_move(self, event):
+        """Handle mouse movement for dragging thumbnails"""
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            drag = QDrag(self)
+            mime_data = QMimeData()
+            drag.setMimeData(mime_data)
+            drag.exec(Qt.DropAction.MoveAction)
 
     def select_thumbnail(self, file_path):
         """Handle thumbnail click to select the corresponding file in the list view"""
