@@ -358,13 +358,11 @@ class PDFCombiner(QMainWindow):
         QMessageBox.information(self, "Coming Soon", "PDF splitting feature will be available in the next version")
 
     def rotate_pages(self):
-        """Rotate pages in selected PDF"""
+        """Rotate pages in selected PDF(s)"""
         selected_items = self.file_list.selectedItems()
         if not selected_items:
-            QMessageBox.warning(self, "No Selection", "Please select a PDF file to rotate.")
+            QMessageBox.warning(self, "No Selection", "Please select PDF file(s) to rotate.")
             return
-        
-        file_path = selected_items[0].text()
         
         # Get rotation angle from user
         angle, ok = QInputDialog.getItem(self, 'Rotate PDF', 
@@ -382,17 +380,48 @@ class PDFCombiner(QMainWindow):
         }
         rotation_angle = rotation_map.get(angle, 0)
         
+        # Create progress dialog
+        progress_dialog = ProgressDialog(self)
+        progress_dialog.setWindowTitle("Rotating PDFs")
+        progress_dialog.progress_bar.setMaximum(len(selected_items))
+        progress_dialog.show()
+        
+        success_count = 0
+        failed_files = []
+        
         try:
-            # Call PDF operations to rotate
-            output_path = self.pdf_operations.rotate_pdf(file_path, rotation_angle)
-            QMessageBox.information(self, "Rotation Complete", 
-                                  f"PDF rotated successfully!\nOutput saved to: {output_path}")
+            for i, item in enumerate(selected_items):
+                file_path = item.text()
+                progress_dialog.set_current_file(os.path.basename(file_path))
+                progress_dialog.progress_bar.setValue(i + 1)
+                
+                try:
+                    # Call PDF operations to rotate
+                    output_path = self.pdf_operations.rotate_pdf(file_path, rotation_angle)
+                    success_count += 1
+                    
+                    # Update thumbnail if the rotated file is still in the list
+                    if file_path in self.pdf_files:
+                        self.update_thumbnail_view()
+                except Exception as e:
+                    failed_files.append((file_path, str(e)))
+                    continue
+                
+                # Process events to keep UI responsive
+                QApplication.processEvents()
+                
+        finally:
+            progress_dialog.close()
             
-            # Update thumbnail if the rotated file is still in the list
-            if file_path in self.pdf_files:
-                self.update_thumbnail_view()
-        except Exception as e:
-            QMessageBox.critical(self, "Rotation Error", f"Error rotating PDF: {str(e)}")
+        # Show results summary
+        if failed_files:
+            error_details = "\n".join(f"{os.path.basename(f[0])}: {f[1]}" for f in failed_files)
+            QMessageBox.warning(self, "Rotation Complete", 
+                               f"Successfully rotated {success_count} file(s).\n\n"
+                               f"Failed to rotate {len(failed_files)} file(s):\n{error_details}")
+        else:
+            QMessageBox.information(self, "Rotation Complete", 
+                                   f"Successfully rotated {success_count} file(s).")
 
     def compress_pdf(self):
         """Compress PDF file size"""
