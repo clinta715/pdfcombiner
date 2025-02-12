@@ -3,7 +3,7 @@ import sys
 from PyQt6.QtWidgets import (
     QInputDialog,
     QMainWindow, QTabWidget, QListWidget, QVBoxLayout, QWidget, QPushButton,
-    QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel
+    QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel, QApplication
 )
 from PyQt6.QtCore import Qt, QMimeData
 from PyQt6.QtGui import QDrag
