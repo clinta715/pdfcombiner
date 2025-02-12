@@ -114,6 +114,9 @@ class PDFCombiner(QMainWindow):
             super().dropEvent(event)
             self.update_file_order_from_list()
             event.acceptProposedAction()
+            
+            # Update the thumbnail view to match the new order
+            self.update_thumbnail_view()
         elif event.mimeData().hasUrls():
             # Handle external file drops
             for url in event.mimeData().urls():
@@ -135,11 +138,15 @@ class PDFCombiner(QMainWindow):
 
     def update_file_order_from_list(self):
         """Update the internal file list order to match the QListWidget order"""
-        self.pdf_files = []
+        new_order = []
         for index in range(self.file_list.count()):
             file_path = self.file_list.item(index).text()
-            self.pdf_files.append(file_path)
-        self.update_thumbnail_view()
+            new_order.append(file_path)
+        
+        # Only update if order actually changed
+        if new_order != self.pdf_files:
+            self.pdf_files = new_order
+            self.update_thumbnail_view()
 
     def thumbnail_drop_event(self, event):
         """Handle thumbnail reordering in the thumbnail view"""
@@ -152,23 +159,41 @@ class PDFCombiner(QMainWindow):
             for i in range(self.thumbnail_layout.count()):
                 widget = self.thumbnail_layout.itemAt(i).widget()
                 if widget and widget.geometry().contains(pos):
-                    target_index = i
+                    # Check if we're dropping above or below the middle of the target
+                    if pos.y() < widget.geometry().center().y():
+                        target_index = i  # Drop above
+                    else:
+                        target_index = i + 1  # Drop below
                     break
+            
+            # If dropping below last item, set target to end
+            if target_index == -1:
+                target_index = len(self.pdf_files)
             
             # Get the source widget (the one being dragged)
             source_widget = self.thumbnail_container.findChild(QWidget, "draggedWidget")
-            if source_widget and target_index != -1:
+            if source_widget:
                 source_path = source_widget.property("filePath")
                 if source_path:
                     # Remove from current position
-                    self.pdf_files.remove(source_path)
+                    current_index = self.pdf_files.index(source_path)
                     
-                    # Insert at new position
+                    # Adjust target index if moving down in list
+                    if target_index > current_index:
+                        target_index -= 1
+                    
+                    # Remove and reinsert at new position
+                    self.pdf_files.remove(source_path)
                     self.pdf_files.insert(target_index, source_path)
                     
                     # Update both views
                     self.update_file_order_from_list()
                     self.update_thumbnail_view()
+                    
+                    # Update list view selection
+                    self.file_list.clearSelection()
+                    self.file_list.setCurrentRow(target_index)
+                    
                     event.acceptProposedAction()
                     return
         
