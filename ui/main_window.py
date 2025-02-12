@@ -333,9 +333,41 @@ class PDFCombiner(QMainWindow):
         QMessageBox.information(self, "Coming Soon", "PDF splitting feature will be available in the next version")
 
     def rotate_pages(self):
-        """Rotate pages in PDF"""
-        # TODO: Implement page rotation functionality
-        QMessageBox.information(self, "Coming Soon", "Page rotation feature will be available in the next version")
+        """Rotate pages in selected PDF"""
+        selected_items = self.file_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a PDF file to rotate.")
+            return
+        
+        file_path = selected_items[0].text()
+        
+        # Get rotation angle from user
+        angle, ok = QInputDialog.getItem(self, 'Rotate PDF', 
+                                       'Select rotation angle:',
+                                       ['90° Clockwise', '90° Counter-Clockwise', '180°'], 
+                                       0, False)
+        if not ok:
+            return
+            
+        # Map selection to rotation angle
+        rotation_map = {
+            '90° Clockwise': 270,
+            '90° Counter-Clockwise': 90,
+            '180°': 180
+        }
+        rotation_angle = rotation_map.get(angle, 0)
+        
+        try:
+            # Call PDF operations to rotate
+            output_path = self.pdf_operations.rotate_pdf(file_path, rotation_angle)
+            QMessageBox.information(self, "Rotation Complete", 
+                                  f"PDF rotated successfully!\nOutput saved to: {output_path}")
+            
+            # Update thumbnail if the rotated file is still in the list
+            if file_path in self.pdf_files:
+                self.update_thumbnail_view()
+        except Exception as e:
+            QMessageBox.critical(self, "Rotation Error", f"Error rotating PDF: {str(e)}")
 
     def compress_pdf(self):
         """Compress PDF file size"""
