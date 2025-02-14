@@ -16,16 +16,26 @@ from operations.pdf_operations import PDFOperations
 class PDFCombiner(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.pdf_files = []
-        self.page_ranges = {}
+        self.pdf_files: list[str] = []
+        self.page_ranges: dict[str, str] = {}
+        self.undo_stack: list[tuple[str, list[str]]] = []  # For undo functionality
+        self.redo_stack: list[tuple[str, list[str]]] = []  # For redo functionality
         self.initUI()
         self.batch_processor = BatchProcessor()
         self.pdf_operations = PDFOperations()
 
-    def initUI(self):
+    def initUI(self) -> None:
+        """Initialize the main UI components"""
         self.setWindowTitle('PDF Combiner')
         self.create_main_menu()
         self.setGeometry(100, 100, 800, 600)
+        
+        # Set up keyboard shortcuts
+        self.setup_shortcuts()
+        
+        # Set up accessibility
+        self.setAccessibleName("PDF Combiner Main Window")
+        self.setAccessibleDescription("Main window for combining and manipulating PDF files")
 
         # Initialize UI components
         self.tabs = QTabWidget()
@@ -268,22 +278,29 @@ class PDFCombiner(QMainWindow):
         if items:
             items[0].setSelected(True)
 
-    def remove_selected(self):
+    def remove_selected(self) -> None:
         """Remove selected files from the list"""
         selected_items = self.file_list.selectedItems()
         if not selected_items:
             QMessageBox.warning(self, "No Selection", "Please select files to remove.")
             return
 
-        for item in selected_items:
-            file_path = item.text()
-            self.pdf_files.remove(file_path)
-            if file_path in self.page_ranges:
-                del self.page_ranges[file_path]
-            self.file_list.takeItem(self.file_list.row(item))
+        # Save state for undo
+        self.save_state("remove")
 
-        # Update thumbnail view after removal
-        self.update_thumbnail_view()
+        try:
+            for item in selected_items:
+                file_path = item.text()
+                self.pdf_files.remove(file_path)
+                if file_path in self.page_ranges:
+                    del self.page_ranges[file_path]
+                self.file_list.takeItem(self.file_list.row(item))
+
+            # Update thumbnail view after removal
+            self.update_thumbnail_view()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to remove files: {str(e)}")
+            self.undo_last_action()  # Revert if error occurs
 
     def create_main_menu(self):
         """Create the main application menu"""
@@ -489,7 +506,48 @@ class PDFCombiner(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Encryption Error", f"Error encrypting PDF: {str(e)}")
 
-    def combine_pdfs(self):
+    def setup_shortcuts(self) -> None:
+        """Set up keyboard shortcuts for common actions"""
+        # File operations
+        QShortcut(QKeySequence("Ctrl+O"), self, self.open_pdf)
+        QShortcut(QKeySequence("Ctrl+S"), self, self.combine_pdfs)
+        QShortcut(QKeySequence("Ctrl+Q"), self, self.close)
+        
+        # Edit operations
+        QShortcut(QKeySequence("Ctrl+Z"), self, self.undo_last_action)
+        QShortcut(QKeySequence("Ctrl+Shift+Z"), self, self.redo_last_action)
+        QShortcut(QKeySequence("Del"), self, self.remove_selected)
+        QShortcut(QKeySequence("Ctrl+D"), self, self.clear_list)
+
+    def save_state(self, action: str) -> None:
+        """Save current state for undo/redo functionality"""
+        self.undo_stack.append((action, self.pdf_files.copy()))
+        self.redo_stack.clear()  # Clear redo stack when new action is performed
+
+    def undo_last_action(self) -> None:
+        """Undo the last action"""
+        if self.undo_stack:
+            action, state = self.undo_stack.pop()
+            self.redo_stack.append((action, self.pdf_files.copy()))
+            self.pdf_files = state
+            self.update_file_list()
+            self.update_thumbnail_view()
+
+    def redo_last_action(self) -> None:
+        """Redo the last undone action"""
+        if self.redo_stack:
+            action, state = self.redo_stack.pop()
+            self.undo_stack.append((action, self.pdf_files.copy()))
+            self.pdf_files = state
+            self.update_file_list()
+            self.update_thumbnail_view()
+
+    def update_file_list(self) -> None:
+        """Update the file list widget to match the internal state"""
+        self.file_list.clear()
+        self.file_list.addItems(self.pdf_files)
+
+    def combine_pdfs(self) -> None:
         """Combine selected PDF files"""
         if not self.pdf_files:
             QMessageBox.warning(self, "No Files", "Please add PDF files before combining.")
