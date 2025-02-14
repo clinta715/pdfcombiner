@@ -304,6 +304,7 @@ class PDFCombiner(QMainWindow):
             self.undo_last_action()  # Revert if error occurs
 
 
+
     def create_main_menu(self):
         """Create the main application menu"""
         menubar = self.menuBar()
