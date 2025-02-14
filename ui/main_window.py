@@ -1,9 +1,10 @@
 import os
 import sys
 from PyQt6.QtWidgets import (
-    QInputDialog,
+    QInputDialog, QDialog,
     QMainWindow, QTabWidget, QListWidget, QVBoxLayout, QWidget, QPushButton,
-    QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel, QApplication
+    QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel, QApplication,
+    QToolBar, QSlider
 )
 from PyQt6.QtCore import Qt, QMimeData
 from PyQt6.QtGui import QDrag, QShortcut, QKeySequence
@@ -464,15 +465,123 @@ class PDFCombiner(QMainWindow):
         
         file_path = selected_items[0].text()
         try:
-            # Open the PDF in the default viewer
-            import subprocess
-            if sys.platform == "win32":
-                os.startfile(file_path)
-            else:
-                opener = "open" if sys.platform == "darwin" else "xdg-open"
-                subprocess.call([opener, file_path])
+            self.preview_window = PreviewWindow(file_path)
+            self.preview_window.show()
         except Exception as e:
-            QMessageBox.critical(self, "Preview Error", f"Could not open PDF: {str(e)}")
+            QMessageBox.critical(self, "Preview Error", f"Could not preview PDF: {str(e)}")
+
+class PreviewWindow(QDialog):
+    """Internal PDF preview window"""
+    def __init__(self, file_path: str):
+        super().__init__()
+        self.file_path = file_path
+        self.current_page = 0
+        self.zoom_level = 1.0
+        self.initUI()
+        self.load_pdf()
+
+    def initUI(self):
+        """Initialize the preview UI"""
+        self.setWindowTitle(f"Preview - {os.path.basename(self.file_path)}")
+        self.setMinimumSize(800, 600)
+        
+        # Main layout
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+        
+        # Toolbar
+        toolbar = QToolBar()
+        main_layout.addWidget(toolbar)
+        
+        # Navigation buttons
+        self.prev_button = QPushButton("Previous")
+        self.prev_button.clicked.connect(self.prev_page)
+        toolbar.addWidget(self.prev_button)
+        
+        self.next_button = QPushButton("Next")
+        self.next_button.clicked.connect(self.next_page)
+        toolbar.addWidget(self.next_button)
+        
+        # Page number display
+        self.page_label = QLabel()
+        toolbar.addWidget(self.page_label)
+        
+        # Zoom controls
+        toolbar.addSeparator()
+        self.zoom_out_button = QPushButton("-")
+        self.zoom_out_button.clicked.connect(self.zoom_out)
+        toolbar.addWidget(self.zoom_out_button)
+        
+        self.zoom_slider = QSlider(Qt.Orientation.Horizontal)
+        self.zoom_slider.setMinimum(50)
+        self.zoom_slider.setMaximum(200)
+        self.zoom_slider.setValue(100)
+        self.zoom_slider.valueChanged.connect(self.zoom_changed)
+        toolbar.addWidget(self.zoom_slider)
+        
+        self.zoom_in_button = QPushButton("+")
+        self.zoom_in_button.clicked.connect(self.zoom_in)
+        toolbar.addWidget(self.zoom_in_button)
+        
+        # Image display
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        main_layout.addWidget(self.image_label)
+        
+        # Load first page
+        self.update_page()
+
+    def load_pdf(self):
+        """Load the PDF document"""
+        self.doc = fitz.open(self.file_path)
+        self.page_count = len(self.doc)
+        self.update_page_controls()
+
+    def update_page_controls(self):
+        """Update navigation controls based on current page"""
+        self.prev_button.setEnabled(self.current_page > 0)
+        self.next_button.setEnabled(self.current_page < self.page_count - 1)
+        self.page_label.setText(f"Page {self.current_page + 1} of {self.page_count}")
+
+    def update_page(self):
+        """Render and display the current page"""
+        page = self.doc.load_page(self.current_page)
+        zoom_matrix = fitz.Matrix(self.zoom_level, self.zoom_level)
+        pix = page.get_pixmap(matrix=zoom_matrix)
+        
+        # Convert to QImage
+        img = QImage(pix.samples, pix.width, pix.height, pix.stride, QImage.Format.Format_RGB888)
+        self.image_label.setPixmap(QPixmap.fromImage(img))
+        self.update_page_controls()
+
+    def prev_page(self):
+        """Go to previous page"""
+        if self.current_page > 0:
+            self.current_page -= 1
+            self.update_page()
+
+    def next_page(self):
+        """Go to next page"""
+        if self.current_page < self.page_count - 1:
+            self.current_page += 1
+            self.update_page()
+
+    def zoom_in(self):
+        """Zoom in"""
+        self.zoom_level = min(2.0, self.zoom_level + 0.1)
+        self.zoom_slider.setValue(int(self.zoom_level * 100))
+        self.update_page()
+
+    def zoom_out(self):
+        """Zoom out"""
+        self.zoom_level = max(0.5, self.zoom_level - 0.1)
+        self.zoom_slider.setValue(int(self.zoom_level * 100))
+        self.update_page()
+
+    def zoom_changed(self, value):
+        """Handle zoom slider change"""
+        self.zoom_level = value / 100.0
+        self.update_page()
 
     def perform_ocr(self):
         """Perform OCR on the selected PDF"""
