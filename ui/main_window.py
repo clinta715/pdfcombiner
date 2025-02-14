@@ -303,6 +303,7 @@ class PDFCombiner(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to remove files: {str(e)}")
             self.undo_last_action()  # Revert if error occurs
 
+
     def create_main_menu(self):
         """Create the main application menu"""
         menubar = self.menuBar()
