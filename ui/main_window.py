@@ -305,6 +305,7 @@ class PDFCombiner(QMainWindow):
 
 
 
+
     def create_main_menu(self):
         """Create the main application menu"""
         menubar = self.menuBar()
