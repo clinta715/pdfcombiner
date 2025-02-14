@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout, QFileDialog, QMessageBox, QScrollArea, QLabel, QApplication
 )
 from PyQt6.QtCore import Qt, QMimeData
-from PyQt6.QtGui import QDrag
+from PyQt6.QtGui import QDrag, QShortcut, QKeySequence
 from PyQt6.QtGui import QPixmap, QImage
 import fitz  # PyMuPDF
 from ui.progress_dialog import ProgressDialog
