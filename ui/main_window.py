@@ -351,6 +351,23 @@ class PDFCombiner(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "OCR Error", f"Error performing OCR: {str(e)}")
 
+    def encrypt_pdf(self):
+        """Encrypt the selected PDF with a password"""
+        selected_items = self.file_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a PDF file to encrypt.")
+            return
+        
+        file_path = selected_items[0].text()
+        password, ok = QInputDialog.getText(self, 'Encrypt PDF', 'Enter password:')
+        if ok and password:
+            try:
+                # Call the existing encryption functionality
+                output_path = self.pdf_operations.encrypt_pdf(file_path, password)
+                QMessageBox.information(self, "Encryption Complete", f"PDF encrypted successfully!\nOutput saved to: {output_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Encryption Error", f"Error encrypting PDF: {str(e)}")
+
     def create_main_menu(self):
         """Create the main application menu"""
         menubar = self.menuBar()
@@ -630,23 +647,6 @@ class PreviewWindow(QDialog):
         """Handle zoom slider change"""
         self.zoom_level = value / 100.0
         self.update_page()
-
-    def encrypt_pdf(self):
-        """Encrypt the selected PDF with a password"""
-        selected_items = self.file_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "No Selection", "Please select a PDF file to encrypt.")
-            return
-        
-        file_path = selected_items[0].text()
-        password, ok = QInputDialog.getText(self, 'Encrypt PDF', 'Enter password:')
-        if ok and password:
-            try:
-                # Call the existing encryption functionality
-                output_path = self.pdf_operations.encrypt_pdf(file_path, password)
-                QMessageBox.information(self, "Encryption Complete", f"PDF encrypted successfully!\nOutput saved to: {output_path}")
-            except Exception as e:
-                QMessageBox.critical(self, "Encryption Error", f"Error encrypting PDF: {str(e)}")
 
     def setup_shortcuts(self) -> None:
         """Set up keyboard shortcuts for common actions"""
