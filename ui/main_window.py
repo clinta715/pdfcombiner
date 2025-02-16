@@ -336,6 +336,21 @@ class PDFCombiner(QMainWindow):
             self.file_list.clear()
             self.update_thumbnail_view()  # Clear thumbnail view
 
+    def perform_ocr(self):
+        """Perform OCR on the selected PDF"""
+        selected_items = self.file_list.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select a PDF file to perform OCR.")
+            return
+        
+        file_path = selected_items[0].text()
+        try:
+            # Call the existing OCR functionality
+            output_path = self.pdf_operations.perform_ocr(file_path)
+            QMessageBox.information(self, "OCR Complete", f"OCR completed successfully!\nOutput saved to: {output_path}")
+        except Exception as e:
+            QMessageBox.critical(self, "OCR Error", f"Error performing OCR: {str(e)}")
+
     def create_main_menu(self):
         """Create the main application menu"""
         menubar = self.menuBar()
@@ -615,21 +630,6 @@ class PreviewWindow(QDialog):
         """Handle zoom slider change"""
         self.zoom_level = value / 100.0
         self.update_page()
-
-    def perform_ocr(self):
-        """Perform OCR on the selected PDF"""
-        selected_items = self.file_list.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "No Selection", "Please select a PDF file to perform OCR.")
-            return
-        
-        file_path = selected_items[0].text()
-        try:
-            # Call the existing OCR functionality
-            output_path = self.pdf_operations.perform_ocr(file_path)
-            QMessageBox.information(self, "OCR Complete", f"OCR completed successfully!\nOutput saved to: {output_path}")
-        except Exception as e:
-            QMessageBox.critical(self, "OCR Error", f"Error performing OCR: {str(e)}")
 
     def encrypt_pdf(self):
         """Encrypt the selected PDF with a password"""
