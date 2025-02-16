@@ -308,6 +308,34 @@ class PDFCombiner(QMainWindow):
 
 
 
+    def combine_pdfs(self) -> None:
+        """Combine selected PDF files"""
+        if not self.pdf_files:
+            QMessageBox.warning(self, "No Files", "Please add PDF files before combining.")
+            return
+
+        output_file, _ = QFileDialog.getSaveFileName(self, "Save Combined PDF", "", "PDF Files (*.pdf)")
+        if not output_file:
+            return
+
+        progress_dialog = ProgressDialog(self)
+        progress_dialog.progress_bar.setMaximum(len(self.pdf_files))
+        progress_dialog.show()
+
+        self.pdf_operations.combine_pdfs(self.pdf_files, output_file, progress_dialog)
+
+        progress_dialog.close()
+
+        QMessageBox.information(self, "Success", "PDFs combined successfully!")
+        reply = QMessageBox.question(self, 'Clear List',
+            'Are you sure you want to clear the file list?',
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.pdf_files.clear()
+            self.file_list.clear()
+            self.update_thumbnail_view()  # Clear thumbnail view
+
     def create_main_menu(self):
         """Create the main application menu"""
         menubar = self.menuBar()
@@ -661,30 +689,3 @@ class PreviewWindow(QDialog):
         self.file_list.clear()
         self.file_list.addItems(self.pdf_files)
 
-    def combine_pdfs(self) -> None:
-        """Combine selected PDF files"""
-        if not self.pdf_files:
-            QMessageBox.warning(self, "No Files", "Please add PDF files before combining.")
-            return
-
-        output_file, _ = QFileDialog.getSaveFileName(self, "Save Combined PDF", "", "PDF Files (*.pdf)")
-        if not output_file:
-            return
-
-        progress_dialog = ProgressDialog(self)
-        progress_dialog.progress_bar.setMaximum(len(self.pdf_files))
-        progress_dialog.show()
-
-        self.pdf_operations.combine_pdfs(self.pdf_files, output_file, progress_dialog)
-
-        progress_dialog.close()
-
-        QMessageBox.information(self, "Success", "PDFs combined successfully!")
-        reply = QMessageBox.question(self, 'Clear List',
-            'Are you sure you want to clear the file list?',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
-
-        if reply == QMessageBox.StandardButton.Yes:
-            self.pdf_files.clear()
-            self.file_list.clear()
-            self.update_thumbnail_view()  # Clear thumbnail view
