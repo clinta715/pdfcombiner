@@ -367,19 +367,24 @@ class PDFCombiner(QMainWindow):
         progress_dialog.progress_bar.setMaximum(len(self.pdf_files))
         progress_dialog.show()
 
-        self.pdf_operations.combine_pdfs(self.pdf_files, output_file, progress_dialog)
+        try:
+            self.pdf_operations.combine_pdfs(self.pdf_files, output_file, progress_dialog)
+            QMessageBox.information(self, "Success", "PDFs combined successfully!")
+            
+            reply = QMessageBox.question(self, 'Clear List',
+                'Are you sure you want to clear the file list?',
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, 
+                QMessageBox.StandardButton.No)
 
-        progress_dialog.close()
-
-        QMessageBox.information(self, "Success", "PDFs combined successfully!")
-        reply = QMessageBox.question(self, 'Clear List',
-            'Are you sure you want to clear the file list?',
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
-
-        if reply == QMessageBox.StandardButton.Yes:
-            self.pdf_files.clear()
-            self.file_list.clear()
-            self.update_thumbnail_view()  # Clear thumbnail view
+            if reply == QMessageBox.StandardButton.Yes:
+                self.pdf_files.clear()
+                self.file_list.clear()
+                self.update_thumbnail_view()
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to combine PDFs: {str(e)}")
+        finally:
+            progress_dialog.close()
 
     def perform_ocr(self):
         """Perform OCR on the selected PDF"""
@@ -389,12 +394,20 @@ class PDFCombiner(QMainWindow):
             return
         
         file_path = selected_items[0].text()
+        
+        progress_dialog = ProgressDialog(self)
+        progress_dialog.setWindowTitle("Performing OCR")
+        progress_dialog.label.setText("Processing PDF...")
+        progress_dialog.show()
+        
         try:
-            # Call the existing OCR functionality
             output_path = self.pdf_operations.perform_ocr(file_path)
-            QMessageBox.information(self, "OCR Complete", f"OCR completed successfully!\nOutput saved to: {output_path}")
+            QMessageBox.information(self, "OCR Complete", 
+                                   f"OCR completed successfully!\nOutput saved to: {output_path}")
         except Exception as e:
             QMessageBox.critical(self, "OCR Error", f"Error performing OCR: {str(e)}")
+        finally:
+            progress_dialog.close()
 
     def encrypt_pdf(self):
         """Encrypt the selected PDF with a password"""
@@ -406,12 +419,19 @@ class PDFCombiner(QMainWindow):
         file_path = selected_items[0].text()
         password, ok = QInputDialog.getText(self, 'Encrypt PDF', 'Enter password:')
         if ok and password:
+            progress_dialog = ProgressDialog(self)
+            progress_dialog.setWindowTitle("Encrypting PDF")
+            progress_dialog.label.setText("Encrypting...")
+            progress_dialog.show()
+            
             try:
-                # Call the existing encryption functionality
                 output_path = self.pdf_operations.encrypt_pdf(file_path, password)
-                QMessageBox.information(self, "Encryption Complete", f"PDF encrypted successfully!\nOutput saved to: {output_path}")
+                QMessageBox.information(self, "Encryption Complete", 
+                                      f"PDF encrypted successfully!\nOutput saved to: {output_path}")
             except Exception as e:
                 QMessageBox.critical(self, "Encryption Error", f"Error encrypting PDF: {str(e)}")
+            finally:
+                progress_dialog.close()
 
     def create_main_menu(self):
         """Create the main application menu"""
