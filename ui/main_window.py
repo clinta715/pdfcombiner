@@ -34,6 +34,19 @@ class PDFCombiner(QMainWindow):
         # Set up keyboard shortcuts
         self.setup_shortcuts()
         
+    def setup_shortcuts(self) -> None:
+        """Set up keyboard shortcuts for common actions"""
+        # File operations
+        QShortcut(QKeySequence("Ctrl+O"), self, self.open_pdf)
+        QShortcut(QKeySequence("Ctrl+S"), self, self.combine_pdfs)
+        QShortcut(QKeySequence("Ctrl+Q"), self, self.close)
+        
+        # Edit operations
+        QShortcut(QKeySequence("Ctrl+Z"), self, self.undo_last_action)
+        QShortcut(QKeySequence("Ctrl+Shift+Z"), self, self.redo_last_action)
+        QShortcut(QKeySequence("Del"), self, self.remove_selected)
+        QShortcut(QKeySequence("Ctrl+D"), self, self.clear_list)
+        
         # Set up accessibility
         self.setAccessibleName("PDF Combiner Main Window")
         self.setAccessibleDescription("Main window for combining and manipulating PDF files")
@@ -648,18 +661,6 @@ class PreviewWindow(QDialog):
         self.zoom_level = value / 100.0
         self.update_page()
 
-    def setup_shortcuts(self) -> None:
-        """Set up keyboard shortcuts for common actions"""
-        # File operations
-        QShortcut(QKeySequence("Ctrl+O"), self, self.open_pdf)
-        QShortcut(QKeySequence("Ctrl+S"), self, self.combine_pdfs)
-        QShortcut(QKeySequence("Ctrl+Q"), self, self.close)
-        
-        # Edit operations
-        QShortcut(QKeySequence("Ctrl+Z"), self, self.undo_last_action)
-        QShortcut(QKeySequence("Ctrl+Shift+Z"), self, self.redo_last_action)
-        QShortcut(QKeySequence("Del"), self, self.remove_selected)
-        QShortcut(QKeySequence("Ctrl+D"), self, self.clear_list)
 
     def save_state(self, action: str) -> None:
         """Save current state for undo/redo functionality"""
