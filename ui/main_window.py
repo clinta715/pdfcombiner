@@ -31,8 +31,40 @@ class PDFCombiner(QMainWindow):
         self.create_main_menu()
         self.setGeometry(100, 100, 800, 600)
         
+        # Initialize undo/redo stacks
+        self.undo_stack = []
+        self.redo_stack = []
+        
         # Set up keyboard shortcuts
         self.setup_shortcuts()
+
+    def save_state(self, action: str) -> None:
+        """Save current state for undo/redo functionality"""
+        self.undo_stack.append((action, self.pdf_files.copy()))
+        self.redo_stack.clear()  # Clear redo stack when new action is performed
+
+    def undo_last_action(self) -> None:
+        """Undo the last action"""
+        if self.undo_stack:
+            action, state = self.undo_stack.pop()
+            self.redo_stack.append((action, self.pdf_files.copy()))
+            self.pdf_files = state
+            self.update_file_list()
+            self.update_thumbnail_view()
+
+    def redo_last_action(self) -> None:
+        """Redo the last undone action"""
+        if self.redo_stack:
+            action, state = self.redo_stack.pop()
+            self.undo_stack.append((action, self.pdf_files.copy()))
+            self.pdf_files = state
+            self.update_file_list()
+            self.update_thumbnail_view()
+
+    def update_file_list(self) -> None:
+        """Update the file list widget to match the internal state"""
+        self.file_list.clear()
+        self.file_list.addItems(self.pdf_files)
         
     def setup_shortcuts(self) -> None:
         """Set up keyboard shortcuts for common actions"""
@@ -662,31 +694,4 @@ class PreviewWindow(QDialog):
         self.update_page()
 
 
-    def save_state(self, action: str) -> None:
-        """Save current state for undo/redo functionality"""
-        self.undo_stack.append((action, self.pdf_files.copy()))
-        self.redo_stack.clear()  # Clear redo stack when new action is performed
-
-    def undo_last_action(self) -> None:
-        """Undo the last action"""
-        if self.undo_stack:
-            action, state = self.undo_stack.pop()
-            self.redo_stack.append((action, self.pdf_files.copy()))
-            self.pdf_files = state
-            self.update_file_list()
-            self.update_thumbnail_view()
-
-    def redo_last_action(self) -> None:
-        """Redo the last undone action"""
-        if self.redo_stack:
-            action, state = self.redo_stack.pop()
-            self.undo_stack.append((action, self.pdf_files.copy()))
-            self.pdf_files = state
-            self.update_file_list()
-            self.update_thumbnail_view()
-
-    def update_file_list(self) -> None:
-        """Update the file list widget to match the internal state"""
-        self.file_list.clear()
-        self.file_list.addItems(self.pdf_files)
 
