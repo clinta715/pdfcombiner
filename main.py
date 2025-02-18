@@ -1,7 +1,8 @@
 import sys
 import logging
 from PyQt6.QtWidgets import QApplication, QListView, QVBoxLayout, QWidget
-from PyQt6.QtCore import Qt, QMimeData, QDrag
+from PyQt6.QtCore import Qt, QMimeData
+from PyQt6.QtGui import QDrag
 from ui.main_window import PDFCombiner
 
 __version__ = "1.0.0"
