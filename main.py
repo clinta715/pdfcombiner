@@ -7,14 +7,17 @@ __version__ = "1.0.0"
 
 def setup_logging() -> None:
     """Configure logging for the application"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('pdfcombiner.log'),
-            logging.StreamHandler()
-        ]
-    )
+    try:
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('pdfcombiner.log'),
+                logging.StreamHandler()
+            ]
+        )
+    except Exception as e:
+        print(f"Error setting up logging: {str(e)}")
 
 def main() -> int:
     """Main application entry point"""
