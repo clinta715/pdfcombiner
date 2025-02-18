@@ -29,6 +29,12 @@ class PDFCombiner(QMainWindow):
         # Add the widget to the main window
         self.setCentralWidget(widget)
         
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.accept()
+        else:
+            event.ignore()
+    
     def dropEvent(self, event):
         mime_data = event.mimeData()
         if mime_data.hasUrls():
