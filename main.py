@@ -40,15 +40,11 @@ def main() -> int:
         # Create a list view to display the files
         file_list_view = QListView()
         file_list_view.setDragDropMode(QListView.DragDropMode.InternalMove)
-        
-        # Create a thumbnail view to display the thumbnails
-        thumbnail_view = QListView()
-        thumbnail_view.setDragDropMode(QListView.DragDropMode.InternalMove)
+        file_list_view.setDragEnabled(True)  # Add this line
         
         # Create a layout to hold the views
         layout = QVBoxLayout()
         layout.addWidget(file_list_view)
-        layout.addWidget(thumbnail_view)
         
         # Create a widget to hold the layout
         widget = QWidget()
