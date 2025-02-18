@@ -1,6 +1,7 @@
 import sys
 import logging
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QListView, QVBoxLayout, QWidget
+from PyQt6.QtCore import Qt, QMimeData, QDrag
 from ui.main_window import PDFCombiner
 
 __version__ = "1.0.0"
@@ -32,8 +33,26 @@ def main() -> int:
         app.setApplicationDisplayName(f"PDFCombiner v{__version__}")
         
         logger.info("Starting PDFCombiner application")
-        pdf_combiner = PDFCombiner()
-        pdf_combiner.show()
+        
+        # Create a list view to display the files
+        file_list_view = QListView()
+        file_list_view.setDragDropMode(QListView.DragDropMode.InternalMove)
+        
+        # Create a thumbnail view to display the thumbnails
+        thumbnail_view = QListView()
+        thumbnail_view.setDragDropMode(QListView.DragDropMode.InternalMove)
+        
+        # Create a layout to hold the views
+        layout = QVBoxLayout()
+        layout.addWidget(file_list_view)
+        layout.addWidget(thumbnail_view)
+        
+        # Create a widget to hold the layout
+        widget = QWidget()
+        widget.setLayout(layout)
+        
+        # Show the widget
+        widget.show()
         
         return app.exec()
         
