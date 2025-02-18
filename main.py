@@ -18,6 +18,8 @@ def setup_logging() -> None:
         )
     except Exception as e:
         print(f"Error setting up logging: {str(e)}")
+        # Add a log message to indicate that there was an issue with logging
+        logging.error("Failed to set up logging", exc_info=True)
 
 def main() -> int:
     """Main application entry point"""
