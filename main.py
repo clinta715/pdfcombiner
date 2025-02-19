@@ -305,7 +305,7 @@ class PDFCombiner(QMainWindow):
             event.setDropAction(Qt.DropAction.MoveAction)
             event.accept()
             
-            # Get the current item being dragged
+            # Get the item being dragged
             current_item = self.file_list.currentItem()
             if not current_item:
                 return
@@ -315,15 +315,19 @@ class PDFCombiner(QMainWindow):
             if not drop_pos.isValid():
                 return
                 
-            # Remove the item from its current position
-            row = self.file_list.row(current_item)
-            self.file_list.takeItem(row)
+            # Get the current row
+            current_row = self.file_list.row(current_item)
             
-            # Insert the item at the new position
-            self.file_list.insertItem(drop_pos.row(), current_item)
-            
-            # Update thumbnails
-            self.update_thumbnails()
+            # Only move if the position has changed
+            if current_row != drop_pos.row():
+                # Take the item from its current position
+                taken_item = self.file_list.takeItem(current_row)
+                
+                # Insert it at the new position
+                self.file_list.insertItem(drop_pos.row(), taken_item)
+                
+                # Update thumbnails to reflect new order
+                self.update_thumbnails()
             return
             
         # Handle external file drops
@@ -335,10 +339,12 @@ class PDFCombiner(QMainWindow):
             for url in event.mimeData().urls():
                 file_path = url.toLocalFile()
                 if file_path.lower().endswith('.pdf'):
-                    # Add to the file list
-                    self.file_list.addItem(file_path)
-                    # Generate and display thumbnail
-                    self.generate_thumbnail(file_path)
+                    # Check if file is already in the list
+                    if not any(self.file_list.item(i).text() == file_path for i in range(self.file_list.count())):
+                        # Add to the file list
+                        self.file_list.addItem(file_path)
+                        # Generate and display thumbnail
+                        self.generate_thumbnail(file_path)
         else:
             event.ignore()
             
