@@ -1,15 +1,25 @@
 # main.py
 import sys
 import logging
-from PyQt6.QtWidgets import QApplication, QMainWindow, QListView, QVBoxLayout, QWidget, QMenuBar, QMenu, QTabWidget, QListWidget, QListWidgetItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, QWidget, QTabWidget, QListWidget, QListWidgetItem
 from PyQt6.QtCore import Qt, QMimeData
-from PyQt6.QtGui import QDrag
 
 class PDFCombiner(QMainWindow):
     def __init__(self):
         super().__init__()
         
         self.setCentralWidget(self.create_main_layout())
+        
+        # Create a menubar and add it to the window
+        self.menu_bar = QMenuBar()
+        self.setMenuBar(self.menu_bar)
+        
+        # Create menus and add them to the menu bar
+        file_menu = QMenu("File")
+        edit_menu = QMenu("Edit")
+        
+        self.menu_bar.addMenu(file_menu)
+        self.menu_bar.addMenu(edit_menu)
         
     def create_main_layout(self):
         main_layout = QVBoxLayout()
@@ -52,9 +62,3 @@ class PDFCombiner(QMainWindow):
         
         # Add the item to the list
         layout.addItem(item)
-        
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = PDFCombiner()
-    window.show()
-    sys.exit(app.exec())
