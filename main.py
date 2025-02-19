@@ -10,6 +10,7 @@ from PyQt6.QtGui import QPixmap, QMouseEvent
 import fitz  # PyMuPDF
 import tempfile
 
+class PDFCombiner(QMainWindow):
     def generate_thumbnail(self, pdf_path):
         """Generate and display a thumbnail for the PDF"""
         try:
