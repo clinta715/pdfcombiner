@@ -236,6 +236,66 @@ class PDFCombiner(QMainWindow):
                 meta.edit_metadata(pdf_path, metadata)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not edit metadata for {pdf_path}: {str(e)}")
+
+    def encrypt_pdf(self):
+        """Handle PDF encryption"""
+        from operations.security import Security
+        from PyQt6.QtWidgets import QInputDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get password
+        password, ok = QInputDialog.getText(self, "Encrypt PDF", "Enter password:", echo=QLineEdit.Password)
+        if not ok or not password:
+            return
+            
+        # Get confirmation
+        confirm_password, ok = QInputDialog.getText(self, "Confirm Password", "Confirm password:", echo=QLineEdit.Password)
+        if not ok or password != confirm_password:
+            QMessageBox.warning(self, "Error", "Passwords do not match")
+            return
+            
+        # Encrypt each file
+        security = Security()
+        for pdf_path in pdf_paths:
+            try:
+                security.encrypt_pdf(pdf_path, password, {})
+                QMessageBox.information(self, "Success", f"PDF encrypted successfully: {pdf_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not encrypt PDF: {str(e)}")
+
+    def decrypt_pdf(self):
+        """Handle PDF decryption"""
+        from operations.security import Security
+        from PyQt6.QtWidgets import QInputDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get password
+        password, ok = QInputDialog.getText(self, "Decrypt PDF", "Enter password:", echo=QLineEdit.Password)
+        if not ok or not password:
+            return
+            
+        # Decrypt each file
+        security = Security()
+        for pdf_path in pdf_paths:
+            try:
+                security.decrypt_pdf(pdf_path, password)
+                QMessageBox.information(self, "Success", f"PDF decrypted successfully: {pdf_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not decrypt PDF: {str(e)}")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
