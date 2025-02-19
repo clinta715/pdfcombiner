@@ -39,6 +39,125 @@ class PDFCombiner(QMainWindow):
         """Handle redo action"""
         # TODO: Implement redo logic
         pass
+        
+    def add_watermark(self):
+        """Handle watermark operation"""
+        from operations.watermark import Watermark
+        from PyQt6.QtWidgets import QInputDialog, QColorDialog
+        
+        if not self.file_list.count():
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        text, ok = QInputDialog.getText(self, "Watermark Text", "Enter watermark text:")
+        if not ok or not text:
+            return
+            
+        color = QColorDialog.getColor()
+        if not color.isValid():
+            return
+            
+        watermark = Watermark()
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            watermark.add_text_watermark(file_path, text, 48, 0.5, 45, color, "Center")
+
+    def perform_ocr(self):
+        """Handle OCR operation"""
+        from ocr.ocr_processor import OCRProcessor
+        from PyQt6.QtWidgets import QFileDialog
+        
+        if not self.file_list.count():
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        processor = OCRProcessor()
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            output_path = file_path.replace('.pdf', '_ocr.pdf')
+            try:
+                processor.perform_ocr(file_path)
+                QMessageBox.information(self, "OCR Complete", f"OCR completed. Output saved to {output_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "OCR Error", str(e))
+
+    def edit_metadata(self):
+        """Handle metadata editing"""
+        from operations.metadata import Metadata
+        from PyQt6.QtWidgets import QInputDialog
+        
+        if not self.file_list.count():
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        metadata = {
+            'Title': '',
+            'Author': '',
+            'Subject': '',
+            'Keywords': '',
+            'Creator': 'PDF Combiner'
+        }
+        
+        for field in ['Title', 'Author', 'Subject', 'Keywords']:
+            value, ok = QInputDialog.getText(self, f"Enter {field}", f"{field}:")
+            if ok:
+                metadata[field] = value
+                
+        meta = Metadata()
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            meta.edit_metadata(file_path, metadata)
+
+    def encrypt_pdf(self):
+        """Handle PDF encryption"""
+        from operations.security import Security
+        from PyQt6.QtWidgets import QInputDialog
+        
+        if not self.file_list.count():
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        password, ok = QInputDialog.getText(self, "Encrypt PDF", "Enter password:", echo=QLineEdit.Password)
+        if not ok or not password:
+            return
+            
+        security = Security()
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            security.encrypt_pdf(file_path, password, permissions={})
+
+    def decrypt_pdf(self):
+        """Handle PDF decryption"""
+        from operations.security import Security
+        from PyQt6.QtWidgets import QInputDialog
+        
+        if not self.file_list.count():
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        password, ok = QInputDialog.getText(self, "Decrypt PDF", "Enter password:", echo=QLineEdit.Password)
+        if not ok or not password:
+            return
+            
+        security = Security()
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            security.decrypt_pdf(file_path, password)
+
+    def redact_pdf(self):
+        """Handle PDF redaction"""
+        from operations.redaction import Redaction
+        from PyQt6.QtWidgets import QInputDialog
+        
+        if not self.file_list.count():
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        redaction = Redaction()
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            # TODO: Implement redaction UI
+            QMessageBox.information(self, "Redaction", "Redaction feature coming soon")
     def __init__(self):
         super().__init__()
         
@@ -72,6 +191,32 @@ class PDFCombiner(QMainWindow):
         # Connect actions
         undo_action.triggered.connect(self.undo_action)
         redo_action.triggered.connect(self.redo_action)
+        
+        # Operations menu
+        operations_menu = menu_bar.addMenu("Operations")
+        
+        # Watermark
+        watermark_action = operations_menu.addAction("Add Watermark")
+        watermark_action.triggered.connect(self.add_watermark)
+        
+        # OCR
+        ocr_action = operations_menu.addAction("Perform OCR")
+        ocr_action.triggered.connect(self.perform_ocr)
+        
+        # Metadata
+        metadata_action = operations_menu.addAction("Edit Metadata")
+        metadata_action.triggered.connect(self.edit_metadata)
+        
+        # Security
+        security_menu = operations_menu.addMenu("Security")
+        encrypt_action = security_menu.addAction("Encrypt PDF")
+        encrypt_action.triggered.connect(self.encrypt_pdf)
+        decrypt_action = security_menu.addAction("Decrypt PDF")
+        decrypt_action.triggered.connect(self.decrypt_pdf)
+        
+        # Redaction
+        redaction_action = operations_menu.addAction("Redact PDF")
+        redaction_action.triggered.connect(self.redact_pdf)
         
     def create_main_layout(self):
         main_layout = QVBoxLayout()
