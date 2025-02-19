@@ -201,6 +201,41 @@ class PDFCombiner(QMainWindow):
                 QMessageBox.information(self, "OCR Complete", f"OCR completed. Output saved to {output_path}")
             except Exception as e:
                 QMessageBox.critical(self, "OCR Error", f"Could not perform OCR on {pdf_path}: {str(e)}")
+
+    def edit_metadata(self):
+        """Handle metadata editing"""
+        from operations.metadata import Metadata
+        from PyQt6.QtWidgets import QInputDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get metadata fields
+        metadata = {
+            'Title': '',
+            'Author': '',
+            'Subject': '',
+            'Keywords': '',
+            'Creator': 'PDF Combiner'
+        }
+        
+        for field in ['Title', 'Author', 'Subject', 'Keywords']:
+            value, ok = QInputDialog.getText(self, f"Enter {field}", f"{field}:")
+            if ok:
+                metadata[field] = value
+                
+        # Apply metadata to each file
+        meta = Metadata()
+        for pdf_path in pdf_paths:
+            try:
+                meta.edit_metadata(pdf_path, metadata)
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not edit metadata for {pdf_path}: {str(e)}")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
