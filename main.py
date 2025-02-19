@@ -123,6 +123,45 @@ class PDFCombiner(QMainWindow):
     def redo_action(self):
         """Handle redo action"""
         QMessageBox.information(self, "Redo", "Redo feature coming soon")
+
+    def add_watermark(self):
+        """Handle watermark operation"""
+        from operations.watermark import Watermark
+        from PyQt6.QtWidgets import QInputDialog, QColorDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get watermark text
+        text, ok = QInputDialog.getText(self, "Watermark Text", "Enter watermark text:")
+        if not ok or not text:
+            return
+            
+        # Get color
+        color = QColorDialog.getColor()
+        if not color.isValid():
+            return
+            
+        # Create and apply watermark
+        watermark = Watermark()
+        for pdf_path in pdf_paths:
+            try:
+                watermark.add_text_watermark(
+                    pdf_path, 
+                    text, 
+                    48,  # font size
+                    0.5, # opacity
+                    45,  # rotation
+                    color, 
+                    "Center"
+                )
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not add watermark to {pdf_path}: {str(e)}")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
