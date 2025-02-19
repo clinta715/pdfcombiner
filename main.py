@@ -21,7 +21,8 @@ class PDFCombiner(QMainWindow):
             "PDF Files (*.pdf)"
         )
         if files:
-            self.file_list.addItems(files)
+            for file_path in files:
+                self.generate_thumbnail(file_path)
 
     def save_files(self):
         """Handle save files action"""
@@ -179,6 +180,11 @@ class PDFCombiner(QMainWindow):
                 pix.save(tmp.name)
                 thumbnail_path = tmp.name
             
+            # Create container widget for thumbnail and filename
+            container = QWidget()
+            container_layout = QVBoxLayout()
+            container.setLayout(container_layout)
+            
             # Create QLabel with the thumbnail
             label = QLabel()
             pixmap = QPixmap(thumbnail_path)
@@ -189,10 +195,17 @@ class PDFCombiner(QMainWindow):
             filename = QLabel(os.path.basename(pdf_path))
             filename.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
-            # Add to thumbnail layout
-            row = self.thumbnail_layout.rowCount()
-            self.thumbnail_layout.addWidget(label, row, 0)
-            self.thumbnail_layout.addWidget(filename, row, 1)
+            # Add widgets to container
+            container_layout.addWidget(label)
+            container_layout.addWidget(filename)
+            
+            # Add container to thumbnail layout
+            row = self.thumbnail_layout.rowCount() // 3
+            col = self.thumbnail_layout.rowCount() % 3
+            self.thumbnail_layout.addWidget(container, row, col)
+            
+            # Store PDF path in container
+            container.pdf_path = pdf_path
             
         except Exception as e:
             print(f"Error generating thumbnail: {e}")
@@ -262,27 +275,14 @@ class PDFCombiner(QMainWindow):
         
         self.tab_widget = QTabWidget()
         
-        # File List Tab
-        self.file_list_tab = QWidget()
-        self.file_list_layout = QVBoxLayout()
-        self.file_list = QListWidget()
-        self.file_list.setAcceptDrops(True)
-        self.file_list.setDragEnabled(True)
-        self.file_list_layout.addWidget(self.file_list)
-        self.file_list_tab.setLayout(self.file_list_layout)
-        
-        # Thumbnail Tab
-        self.thumbnail_tab = QWidget()
+        # Main Thumbnail View
         self.thumbnail_scroll = QScrollArea()
         self.thumbnail_scroll.setWidgetResizable(True)
         self.thumbnail_container = QWidget()
         self.thumbnail_layout = QGridLayout(self.thumbnail_container)
         self.thumbnail_scroll.setWidget(self.thumbnail_container)
-        self.thumbnail_tab.setLayout(QVBoxLayout())
-        self.thumbnail_tab.layout().addWidget(self.thumbnail_scroll)
         
-        self.tab_widget.addTab(self.file_list_tab, "File List")
-        self.tab_widget.addTab(self.thumbnail_tab, "Thumbnails")
+        main_layout.addWidget(self.thumbnail_scroll)
         
         main_layout.addWidget(self.tab_widget)
         
@@ -293,44 +293,13 @@ class PDFCombiner(QMainWindow):
     
     def dragEnterEvent(self, event):
         """Handle drag enter event"""
-        if event.source() == self.file_list or event.mimeData().hasUrls():
+        if event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
             event.ignore()
     
     def dropEvent(self, event):
         """Handle drop event"""
-        # Handle internal reordering
-        if event.source() == self.file_list:
-            event.setDropAction(Qt.DropAction.MoveAction)
-            event.accept()
-            
-            # Get the item being dragged
-            current_item = self.file_list.currentItem()
-            if not current_item:
-                return
-                
-            # Get the position where the item is being dropped
-            drop_pos = self.file_list.indexAt(event.position().toPoint())
-            if not drop_pos.isValid():
-                return
-                
-            # Get the current row
-            current_row = self.file_list.row(current_item)
-            
-            # Only move if the position has changed
-            if current_row != drop_pos.row():
-                # Take the item from its current position
-                taken_item = self.file_list.takeItem(current_row)
-                
-                # Insert it at the new position
-                self.file_list.insertItem(drop_pos.row(), taken_item)
-                
-                # Update thumbnails to reflect new order
-                self.update_thumbnails()
-            return
-            
-        # Handle external file drops
         if event.mimeData().hasUrls():
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
@@ -339,12 +308,8 @@ class PDFCombiner(QMainWindow):
             for url in event.mimeData().urls():
                 file_path = url.toLocalFile()
                 if file_path.lower().endswith('.pdf'):
-                    # Check if file is already in the list
-                    if not any(self.file_list.item(i).text() == file_path for i in range(self.file_list.count())):
-                        # Add to the file list
-                        self.file_list.addItem(file_path)
-                        # Generate and display thumbnail
-                        self.generate_thumbnail(file_path)
+                    # Generate and display thumbnail
+                    self.generate_thumbnail(file_path)
         else:
             event.ignore()
             
