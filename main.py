@@ -4,9 +4,9 @@ import logging
 import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, 
                             QWidget, QTabWidget, QListWidget, QListWidgetItem, QMessageBox,
-                            QLineEdit, QLabel, QScrollArea, QGridLayout)
-from PyQt6.QtCore import Qt, QMimeData
-from PyQt6.QtGui import QPixmap
+                            QLineEdit, QLabel, QScrollArea, QGridLayout, QPushButton)
+from PyQt6.QtCore import Qt, QMimeData, QPoint
+from PyQt6.QtGui import QPixmap, QMouseEvent
 import fitz  # PyMuPDF
 import tempfile
 
@@ -180,10 +180,11 @@ class PDFCombiner(QMainWindow):
                 pix.save(tmp.name)
                 thumbnail_path = tmp.name
             
-            # Create container widget for thumbnail and filename
-            container = QWidget()
+            # Create draggable container widget for thumbnail and filename
+            container = DraggableThumbnail(self)
             container_layout = QVBoxLayout()
             container.setLayout(container_layout)
+            container.setAcceptDrops(True)
             
             # Create QLabel with the thumbnail
             label = QLabel()
@@ -214,6 +215,62 @@ class PDFCombiner(QMainWindow):
         except Exception as e:
             print(f"Error generating thumbnail: {e}")
 
+class DraggableThumbnail(QWidget):
+    """Custom widget for draggable thumbnails"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.drag_start_position = QPoint()
+        self.setStyleSheet("""
+            QWidget {
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 5px;
+                background-color: white;
+            }
+            QWidget:hover {
+                border: 1px solid #888;
+                background-color: #f0f0f0;
+            }
+        """)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drag_start_position = event.position().toPoint()
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if not (event.buttons() & Qt.MouseButton.LeftButton):
+            return
+        if (event.position().toPoint() - self.drag_start_position).manhattanLength() < 10:
+            return
+            
+        # Get the current position in the grid
+        layout = self.parent.thumbnail_layout
+        index = layout.indexOf(self)
+        row = index // 3
+        col = index % 3
+        
+        # Remove from current position
+        layout.removeWidget(self)
+        self.hide()
+        
+        # Calculate new position based on mouse
+        pos = self.mapToParent(event.position().toPoint())
+        new_index = layout.count()
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item and item.geometry().contains(pos):
+                new_index = i
+                break
+                
+        # Insert at new position
+        layout.insertWidget(new_index, self)
+        self.show()
+        
+        # Update the order of PDF paths
+        self.parent.update_pdf_order()
+
+class PDFCombiner(QMainWindow):
     def __init__(self):
         super().__init__()
         
@@ -315,6 +372,18 @@ class PDFCombiner(QMainWindow):
         else:
             event.ignore()
             
+    def update_pdf_order(self):
+        """Update the internal list of PDFs based on thumbnail order"""
+        pdf_paths = []
+        for i in range(self.thumbnail_layout.count()):
+            widget = self.thumbnail_layout.itemAt(i).widget()
+            if hasattr(widget, 'pdf_path'):
+                pdf_paths.append(widget.pdf_path)
+        
+        # Update any internal lists or data structures here
+        # For now, just store the order
+        self.pdf_order = pdf_paths
+
     def update_thumbnails(self):
         """Update all thumbnails based on current file list order"""
         # Clear existing thumbnails
