@@ -296,6 +296,70 @@ class PDFCombiner(QMainWindow):
                 QMessageBox.information(self, "Success", f"PDF decrypted successfully: {pdf_path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not decrypt PDF: {str(e)}")
+
+    def redact_pdf(self):
+        """Handle PDF redaction"""
+        from operations.redaction import Redaction
+        from PyQt6.QtWidgets import QInputDialog, QFileDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get redaction areas
+        redactions = []
+        while True:
+            # Prompt for page number and rectangle coordinates
+            page_num, ok = QInputDialog.getInt(
+                self,
+                "Redact Page",
+                "Enter page number to redact (1-based):",
+                min=1
+            )
+            if not ok:
+                break
+                
+            # Get rectangle coordinates
+            rect_str, ok = QInputDialog.getText(
+                self,
+                "Redact Area",
+                "Enter rectangle coordinates (x1,y1,x2,y2):"
+            )
+            if not ok:
+                continue
+                
+            try:
+                x1, y1, x2, y2 = map(float, rect_str.split(','))
+                redactions.append((page_num - 1, (x1, y1, x2, y2)))
+            except ValueError:
+                QMessageBox.warning(self, "Invalid Input", "Please enter coordinates in format: x1,y1,x2,y2")
+                continue
+                
+            # Ask if user wants to add more redactions
+            reply = QMessageBox.question(
+                self,
+                "Add More Redactions",
+                "Do you want to add more redactions?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
+            if reply == QMessageBox.StandardButton.No:
+                break
+                
+        if not redactions:
+            return
+            
+        # Apply redactions
+        redaction = Redaction()
+        for pdf_path in pdf_paths:
+            try:
+                redaction.redact_pdf(pdf_path, redactions)
+                QMessageBox.information(self, "Success", f"PDF redacted successfully: {pdf_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not redact PDF: {str(e)}")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
