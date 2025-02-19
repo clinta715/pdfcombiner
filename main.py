@@ -3,8 +3,11 @@ import sys
 import logging
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, 
                             QWidget, QTabWidget, QListWidget, QListWidgetItem, QMessageBox,
-                            QLineEdit)
+                            QLineEdit, QLabel, QScrollArea, QGridLayout)
 from PyQt6.QtCore import Qt, QMimeData
+from PyQt6.QtGui import QPixmap
+import fitz  # PyMuPDF
+import tempfile
 
 class PDFCombiner(QMainWindow):
     def open_files(self):
@@ -160,6 +163,39 @@ class PDFCombiner(QMainWindow):
             file_path = self.file_list.item(i).text()
             # TODO: Implement redaction UI
             QMessageBox.information(self, "Redaction", "Redaction feature coming soon")
+    def generate_thumbnail(self, pdf_path):
+        """Generate and display a thumbnail for the PDF"""
+        try:
+            # Open the PDF and get the first page
+            doc = fitz.open(pdf_path)
+            page = doc.load_page(0)
+            
+            # Render the page to an image
+            pix = page.get_pixmap(matrix=fitz.Matrix(0.2, 0.2))
+            
+            # Save to a temporary file
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                pix.save(tmp.name)
+                thumbnail_path = tmp.name
+            
+            # Create QLabel with the thumbnail
+            label = QLabel()
+            pixmap = QPixmap(thumbnail_path)
+            label.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            # Add filename label
+            filename = QLabel(os.path.basename(pdf_path))
+            filename.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            # Add to thumbnail layout
+            row = self.thumbnail_layout.rowCount()
+            self.thumbnail_layout.addWidget(label, row, 0)
+            self.thumbnail_layout.addWidget(filename, row, 1)
+            
+        except Exception as e:
+            print(f"Error generating thumbnail: {e}")
+
     def __init__(self):
         super().__init__()
         
@@ -236,8 +272,13 @@ class PDFCombiner(QMainWindow):
         
         # Thumbnail Tab
         self.thumbnail_tab = QWidget()
-        self.thumbnail_layout = QVBoxLayout()
-        self.thumbnail_tab.setLayout(self.thumbnail_layout)
+        self.thumbnail_scroll = QScrollArea()
+        self.thumbnail_scroll.setWidgetResizable(True)
+        self.thumbnail_container = QWidget()
+        self.thumbnail_layout = QGridLayout(self.thumbnail_container)
+        self.thumbnail_scroll.setWidget(self.thumbnail_container)
+        self.thumbnail_tab.setLayout(QVBoxLayout())
+        self.thumbnail_tab.layout().addWidget(self.thumbnail_scroll)
         
         self.tab_widget.addTab(self.file_list_tab, "File List")
         self.tab_widget.addTab(self.thumbnail_tab, "Thumbnails")
