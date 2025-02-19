@@ -309,6 +309,8 @@ class PDFCombiner(QMainWindow):
                 if file_path.lower().endswith('.pdf'):
                     # Add to the file list
                     self.file_list.addItem(file_path)
+                    # Generate and display thumbnail
+                    self.generate_thumbnail(file_path)
         else:
             event.ignore()
 
