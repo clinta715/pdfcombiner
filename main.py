@@ -162,6 +162,45 @@ class PDFCombiner(QMainWindow):
                 )
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not add watermark to {pdf_path}: {str(e)}")
+
+    def perform_ocr(self):
+        """Handle OCR operation"""
+        from ocr.ocr_processor import OCRProcessor
+        from PyQt6.QtWidgets import QInputDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get OCR language
+        languages = ["eng", "fra", "spa", "deu", "ita"]  # Add more as needed
+        language, ok = QInputDialog.getItem(
+            self,
+            "Select OCR Language",
+            "Choose the language for OCR:",
+            languages,
+            current=0,
+            editable=False
+        )
+        
+        if not ok or not language:
+            return
+            
+        # Perform OCR on each file
+        processor = OCRProcessor()
+        processor.ocr_language = language
+        
+        for pdf_path in pdf_paths:
+            try:
+                output_path = pdf_path.replace('.pdf', '_ocr.pdf')
+                processor.perform_ocr(pdf_path)
+                QMessageBox.information(self, "OCR Complete", f"OCR completed. Output saved to {output_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "OCR Error", f"Could not perform OCR on {pdf_path}: {str(e)}")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
