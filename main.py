@@ -71,3 +71,22 @@ class PDFCombiner(QMainWindow):
         
         # Add the item to the list
         layout.addItem(item)
+
+def main():
+    """Main application entry point"""
+    app = QApplication(sys.argv)
+    
+    # Set up logging
+    logging.basicConfig(level=logging.INFO)
+    
+    # Create and show main window
+    window = PDFCombiner()
+    window.setWindowTitle("PDF Combiner")
+    window.resize(800, 600)
+    window.show()
+    
+    # Start application event loop
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()
