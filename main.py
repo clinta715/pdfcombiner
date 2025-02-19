@@ -87,6 +87,34 @@ class PDFCombiner(QMainWindow):
         if files:
             for file_path in files:
                 self.generate_thumbnail(file_path)
+
+    def save_files(self):
+        """Handle save files action"""
+        from PyQt6.QtWidgets import QFileDialog
+        file, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Combined PDF",
+            "",
+            "PDF Files (*.pdf)"
+        )
+        if file:
+            # TODO: Implement save logic
+            from operations.pdf_operations import PDFOperations
+            pdf_ops = PDFOperations()
+            try:
+                # Get all PDF paths from thumbnails
+                pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                            if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+                
+                if not pdf_paths:
+                    QMessageBox.warning(self, "No Files", "Please add PDF files first")
+                    return
+                
+                # Combine PDFs
+                pdf_ops.combine_pdfs(pdf_paths, file, None)
+                QMessageBox.information(self, "Success", "PDFs combined successfully!")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not save PDF: {str(e)}")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
