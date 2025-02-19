@@ -1,7 +1,9 @@
 # main.py
 import sys
 import logging
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, QWidget, QTabWidget, QListWidget, QListWidgetItem
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, 
+                            QWidget, QTabWidget, QListWidget, QListWidgetItem, QMessageBox,
+                            QLineEdit)
 from PyQt6.QtCore import Qt, QMimeData
 
 class PDFCombiner(QMainWindow):
