@@ -29,7 +29,10 @@ class PDFCombiner(QMainWindow):
         
         main_layout.addWidget(tab_widget)
         
-        return main_layout
+        central_widget = QWidget()
+        central_widget.setLayout(main_layout)
+        
+        return central_widget
     
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('application/x-qabstractitemmodeldatalist'):
