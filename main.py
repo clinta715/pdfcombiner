@@ -1,6 +1,7 @@
 # main.py
 import sys
 import logging
+import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, 
                             QWidget, QTabWidget, QListWidget, QListWidgetItem, QMessageBox,
                             QLineEdit, QLabel, QScrollArea, QGridLayout)
