@@ -199,10 +199,14 @@ class PDFCombiner(QMainWindow):
             container_layout.addWidget(label)
             container_layout.addWidget(filename)
             
-            # Add container to thumbnail layout
-            row = self.thumbnail_layout.rowCount() // 3
-            col = self.thumbnail_layout.rowCount() % 3
+            # Add container to thumbnail layout in a 3-column grid
+            item_count = self.thumbnail_layout.count()
+            row = item_count // 3
+            col = item_count % 3
             self.thumbnail_layout.addWidget(container, row, col)
+            
+            # Adjust container size
+            container.setFixedSize(220, 250)  # Fixed size for consistency
             
             # Store PDF path in container
             container.pdf_path = pdf_path
@@ -273,18 +277,16 @@ class PDFCombiner(QMainWindow):
     def create_main_layout(self):
         main_layout = QVBoxLayout()
         
-        self.tab_widget = QTabWidget()
-        
         # Main Thumbnail View
         self.thumbnail_scroll = QScrollArea()
         self.thumbnail_scroll.setWidgetResizable(True)
         self.thumbnail_container = QWidget()
         self.thumbnail_layout = QGridLayout(self.thumbnail_container)
+        self.thumbnail_layout.setSpacing(20)  # Add spacing between thumbnails
+        self.thumbnail_layout.setContentsMargins(20, 20, 20, 20)  # Add margins
         self.thumbnail_scroll.setWidget(self.thumbnail_container)
         
         main_layout.addWidget(self.thumbnail_scroll)
-        
-        main_layout.addWidget(self.tab_widget)
         
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
