@@ -293,13 +293,40 @@ class PDFCombiner(QMainWindow):
     
     def dragEnterEvent(self, event):
         """Handle drag enter event"""
-        if event.mimeData().hasUrls():
+        if event.source() == self.file_list or event.mimeData().hasUrls():
             event.acceptProposedAction()
         else:
             event.ignore()
     
     def dropEvent(self, event):
         """Handle drop event"""
+        # Handle internal reordering
+        if event.source() == self.file_list:
+            event.setDropAction(Qt.DropAction.MoveAction)
+            event.accept()
+            
+            # Get the current item being dragged
+            current_item = self.file_list.currentItem()
+            if not current_item:
+                return
+                
+            # Get the position where the item is being dropped
+            drop_pos = self.file_list.indexAt(event.position().toPoint())
+            if not drop_pos.isValid():
+                return
+                
+            # Remove the item from its current position
+            row = self.file_list.row(current_item)
+            self.file_list.takeItem(row)
+            
+            # Insert the item at the new position
+            self.file_list.insertItem(drop_pos.row(), current_item)
+            
+            # Update thumbnails
+            self.update_thumbnails()
+            return
+            
+        # Handle external file drops
         if event.mimeData().hasUrls():
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
@@ -314,6 +341,20 @@ class PDFCombiner(QMainWindow):
                     self.generate_thumbnail(file_path)
         else:
             event.ignore()
+            
+    def update_thumbnails(self):
+        """Update all thumbnails based on current file list order"""
+        # Clear existing thumbnails
+        while self.thumbnail_layout.count():
+            item = self.thumbnail_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+                
+        # Regenerate thumbnails in current order
+        for i in range(self.file_list.count()):
+            file_path = self.file_list.item(i).text()
+            self.generate_thumbnail(file_path)
 
 def main():
     """Main application entry point"""
