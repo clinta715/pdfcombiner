@@ -115,6 +115,14 @@ class PDFCombiner(QMainWindow):
                 QMessageBox.information(self, "Success", "PDFs combined successfully!")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not save PDF: {str(e)}")
+
+    def undo_action(self):
+        """Handle undo action"""
+        QMessageBox.information(self, "Undo", "Undo feature coming soon")
+
+    def redo_action(self):
+        """Handle redo action"""
+        QMessageBox.information(self, "Redo", "Redo feature coming soon")
         
     def create_menu_bar(self):
         """Create and configure the menu bar"""
