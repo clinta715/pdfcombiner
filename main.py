@@ -8,18 +8,27 @@ class PDFCombiner(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # Create menu bar first
+        self.create_menu_bar()
+        
+        # Then set up main layout
         self.setCentralWidget(self.create_main_layout())
         
-        # Create a menubar and add it to the window
-        self.menu_bar = QMenuBar()
-        self.setMenuBar(self.menu_bar)
+    def create_menu_bar(self):
+        """Create and configure the menu bar"""
+        menu_bar = self.menuBar()
         
-        # Create menus and add them to the menu bar
-        file_menu = QMenu("File")
-        edit_menu = QMenu("Edit")
+        # File menu
+        file_menu = menu_bar.addMenu("File")
+        file_menu.addAction("Open")
+        file_menu.addAction("Save")
+        file_menu.addSeparator()
+        file_menu.addAction("Exit")
         
-        self.menu_bar.addMenu(file_menu)
-        self.menu_bar.addMenu(edit_menu)
+        # Edit menu
+        edit_menu = menu_bar.addMenu("Edit")
+        edit_menu.addAction("Undo")
+        edit_menu.addAction("Redo")
         
     def create_main_layout(self):
         main_layout = QVBoxLayout()
