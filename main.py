@@ -465,6 +465,56 @@ class PDFCombiner(QMainWindow):
         # For now, just store the order
         self.pdf_order = pdf_paths
 
+    def generate_thumbnail(self, pdf_path):
+        """Generate and display a thumbnail for the PDF"""
+        try:
+            # Open the PDF and get the first page
+            doc = fitz.open(pdf_path)
+            page = doc.load_page(0)
+            
+            # Render the page to an image
+            pix = page.get_pixmap(matrix=fitz.Matrix(0.2, 0.2))
+            
+            # Save to a temporary file
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+                pix.save(tmp.name)
+                thumbnail_path = tmp.name
+            
+            # Create draggable container widget for thumbnail and filename
+            container = DraggableThumbnail(self)
+            container_layout = QVBoxLayout()
+            container.setLayout(container_layout)
+            container.setAcceptDrops(True)
+            
+            # Create QLabel with the thumbnail
+            label = QLabel()
+            pixmap = QPixmap(thumbnail_path)
+            label.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            # Add filename label
+            filename = QLabel(os.path.basename(pdf_path))
+            filename.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            # Add widgets to container
+            container_layout.addWidget(label)
+            container_layout.addWidget(filename)
+            
+            # Add container to thumbnail layout in a 3-column grid
+            item_count = self.thumbnail_layout.count()
+            row = item_count // 3
+            col = item_count % 3
+            self.thumbnail_layout.addWidget(container, row, col)
+            
+            # Adjust container size
+            container.setFixedSize(220, 250)  # Fixed size for consistency
+            
+            # Store PDF path in container
+            container.pdf_path = pdf_path
+            
+        except Exception as e:
+            print(f"Error generating thumbnail: {e}")
+
     def update_thumbnails(self):
         """Update all thumbnails based on current file list order"""
         # Clear existing thumbnails
