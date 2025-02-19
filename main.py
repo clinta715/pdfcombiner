@@ -33,20 +33,26 @@ class PDFCombiner(QMainWindow):
     def create_main_layout(self):
         main_layout = QVBoxLayout()
         
-        tab_widget = QTabWidget()
+        self.tab_widget = QTabWidget()
         
-        file_list_tab = QWidget()
-        file_list_tab_layout = QVBoxLayout()
-        file_list_tab.setLayout(file_list_tab_layout)
+        # File List Tab
+        self.file_list_tab = QWidget()
+        self.file_list_layout = QVBoxLayout()
+        self.file_list = QListWidget()
+        self.file_list.setAcceptDrops(True)
+        self.file_list.setDragEnabled(True)
+        self.file_list_layout.addWidget(self.file_list)
+        self.file_list_tab.setLayout(self.file_list_layout)
         
-        thumbnail_tab = QWidget()
-        thumbnail_tab_layout = QVBoxLayout()
-        thumbnail_tab.setLayout(thumbnail_tab_layout)
+        # Thumbnail Tab
+        self.thumbnail_tab = QWidget()
+        self.thumbnail_layout = QVBoxLayout()
+        self.thumbnail_tab.setLayout(self.thumbnail_layout)
         
-        tab_widget.addTab(file_list_tab, "File List")
-        tab_widget.addTab(thumbnail_tab, "Thumbnails")
+        self.tab_widget.addTab(self.file_list_tab, "File List")
+        self.tab_widget.addTab(self.thumbnail_tab, "Thumbnails")
         
-        main_layout.addWidget(tab_widget)
+        main_layout.addWidget(self.tab_widget)
         
         central_widget = QWidget()
         central_widget.setLayout(main_layout)

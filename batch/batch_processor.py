@@ -152,21 +152,30 @@ class BatchProcessor:
 
     def process_queue(self):
         """Process all operations in queue"""
-        while self.queue and not self.progress_dialog.cancelled:
-            self.current_operation = self.queue.pop(0)
-            success = self.process_operation()
+        try:
+            while self.queue and not self.progress_dialog.cancelled:
+                self.current_operation = self.queue.pop(0)
+                try:
+                    success = self.process_operation()
+                    
+                    if not success and self.current_operation.retry_count < self.current_operation.max_retries:
+                        self.current_operation.retry_count += 1
+                        self.queue.insert(0, self.current_operation)
+                        self.signals.progress.emit(0, f"Retrying operation (attempt {self.current_operation.retry_count + 1})")
+                        continue
 
-            if not success and self.current_operation.retry_count < self.current_operation.max_retries:
-                self.current_operation.retry_count += 1
-                self.queue.insert(0, self.current_operation)
-                self.signals.progress.emit(0, f"Retrying operation (attempt {self.current_operation.retry_count + 1})")
-
-            self.signals.progress.emit(
-                self.progress_dialog.overall_progress.maximum() - len(self.queue),
-                "Processing complete"
-            )
-
-        self.signals.completed.emit()
+                    self.signals.progress.emit(
+                        self.progress_dialog.overall_progress.maximum() - len(self.queue),
+                        "Processing complete"
+                    )
+                except Exception as e:
+                    self.signals.error.emit(f"Operation failed: {str(e)}")
+                    continue
+                    
+            self.signals.completed.emit()
+        finally:
+            # Clean up any resources
+            self.current_operation = None
 
     def process_operation(self) -> bool:
         """Process single operation with progress updates"""

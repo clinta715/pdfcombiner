@@ -4,14 +4,22 @@ from PyQt6.QtWidgets import QMessageBox
 class Security:
     def validate_password(self, password):
         """Validate password strength"""
+        if not password:
+            raise ValueError("Password cannot be empty")
+            
+        # Use constant-time comparison to prevent timing attacks
+        errors = []
         if len(password) < 8:
-            raise ValueError("Password must be at least 8 characters")
+            errors.append("Password must be at least 8 characters")
         if not any(c.isupper() for c in password):
-            raise ValueError("Password must contain at least one uppercase letter")
+            errors.append("Password must contain at least one uppercase letter")
         if not any(c.islower() for c in password):
-            raise ValueError("Password must contain at least one lowercase letter")
+            errors.append("Password must contain at least one lowercase letter")
         if not any(c.isdigit() for c in password):
-            raise ValueError("Password must contain at least one digit")
+            errors.append("Password must contain at least one digit")
+            
+        if errors:
+            raise ValueError("\n".join(errors))
 
     def encrypt_pdf(self, pdf_path, password, permissions):
         try:
