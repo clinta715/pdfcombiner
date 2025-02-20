@@ -56,15 +56,21 @@ class DraggableThumbnail(QWidget):
                 
         # If we found a target position and it's different from current
         if target_index != -1 and target_index != index:
-            # Remove from current position
-            widget = layout.takeAt(index).widget()
+            # Remove all widgets from layout
+            widgets = []
+            while layout.count():
+                item = layout.takeAt(0)
+                if item.widget():
+                    widgets.append(item.widget())
             
-            # Calculate new row and column
-            new_row = target_index // 3
-            new_col = target_index % 3
-                
-            # Add widget at new position
-            layout.addWidget(widget, new_row, new_col)
+            # Reorder widgets
+            widgets.insert(target_index, widgets.pop(index))
+            
+            # Add widgets back in new order
+            for i, widget in enumerate(widgets):
+                row = i // 3
+                col = i % 3
+                layout.addWidget(widget, row, col)
             
             # Update the order of PDF paths
             self.parent.update_pdf_order()
