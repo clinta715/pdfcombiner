@@ -436,6 +436,11 @@ class PDFCombiner(QMainWindow):
         
         main_layout.addWidget(self.thumbnail_scroll)
         
+        # Add Combine button
+        self.combine_button = QPushButton("Combine PDFs")
+        self.combine_button.clicked.connect(self.combine_pdfs)
+        main_layout.addWidget(self.combine_button)
+        
         central_widget = QWidget()
         central_widget.setLayout(main_layout)
         
@@ -620,6 +625,37 @@ class PDFCombiner(QMainWindow):
         preview = PDFPreviewDialog(pdf_path, self)
         preview.exec()
         
+    def combine_pdfs(self):
+        """Handle PDF combining operation"""
+        from PyQt6.QtWidgets import QFileDialog
+        
+        # Get PDF paths from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get output file path
+        output_file, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Combined PDF",
+            "",
+            "PDF Files (*.pdf)"
+        )
+        
+        if not output_file:
+            return
+            
+        try:
+            from operations.pdf_operations import PDFOperations
+            pdf_ops = PDFOperations()
+            pdf_ops.combine_pdfs(pdf_paths, output_file, None)
+            QMessageBox.information(self, "Success", "PDFs combined successfully!")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Could not combine PDFs: {str(e)}")
+
     def update_thumbnails(self):
         """Update all thumbnails based on current file list order"""
         # Clear existing thumbnails
