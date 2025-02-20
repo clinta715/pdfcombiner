@@ -496,15 +496,29 @@ class PDFCombiner(QMainWindow):
             container.setLayout(container_layout)
             container.setAcceptDrops(True)
             
+            # Create container with thumbnail and filename
+            container_layout.setSpacing(5)
+            container_layout.setContentsMargins(5, 5, 5, 5)
+            
             # Create QLabel with the thumbnail
             label = QLabel()
             pixmap = QPixmap(thumbnail_path)
-            label.setPixmap(pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+            label.setPixmap(pixmap.scaled(180, 180, Qt.AspectRatioMode.KeepAspectRatio))
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
-            # Add filename label
+            # Add filename label with word wrap
             filename = QLabel(os.path.basename(pdf_path))
             filename.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            filename.setWordWrap(True)
+            filename.setMaximumWidth(200)
+            filename.setStyleSheet("""
+                QLabel {
+                    font-size: 10px;
+                    padding: 2px;
+                    background-color: rgba(255, 255, 255, 200);
+                    border-radius: 3px;
+                }
+            """)
             
             # Add widgets to container
             container_layout.addWidget(label)
