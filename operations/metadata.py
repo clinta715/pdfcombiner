@@ -9,10 +9,10 @@ class MetadataError(Exception):
     pass
 
 class Metadata:
-    # Standard PDF metadata keys
+    # Standard PDF metadata keys (must start with / according to PDF spec)
     VALID_KEYS = {
-        'Title', 'Author', 'Subject', 'Keywords', 'Creator', 'Producer',
-        'CreationDate', 'ModDate', 'Trapped'
+        '/Title', '/Author', '/Subject', '/Keywords', '/Creator', '/Producer',
+        '/CreationDate', '/ModDate', '/Trapped'
     }
 
     def validate_metadata(self, metadata: Dict[str, Any]) -> None:
@@ -107,8 +107,8 @@ class Metadata:
             writer.append_pages_from_reader(reader)
 
             # Add modification date if not specified
-            if 'ModDate' not in new_metadata:
-                new_metadata['ModDate'] = f"D:{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            if '/ModDate' not in new_metadata:
+                new_metadata['/ModDate'] = f"D:{datetime.now().strftime('%Y%m%d%H%M%S')}"
 
             writer.add_metadata(new_metadata)
 
