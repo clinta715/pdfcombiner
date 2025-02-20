@@ -79,11 +79,18 @@ class PDFCombiner(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # Initialize undo stack
+        self.undo_stack = []
+        self.current_state = []
+        
         # Create menu bar first
         self.create_menu_bar()
         
         # Then set up main layout
         self.setCentralWidget(self.create_main_layout())
+        
+        # Save initial state
+        self.save_state()
         
     def open_files(self):
         """Handle open files action"""
@@ -95,6 +102,7 @@ class PDFCombiner(QMainWindow):
             "PDF Files (*.pdf)"
         )
         if files:
+            self.push_to_undo_stack('open_files', {'files': files})
             for file_path in files:
                 self.generate_thumbnail(file_path)
 
@@ -126,9 +134,41 @@ class PDFCombiner(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not save PDF: {str(e)}")
 
+    def save_state(self):
+        """Save current state of PDF files"""
+        self.current_state = [widget.pdf_path for i in range(self.thumbnail_layout.count())
+                            if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+    def push_to_undo_stack(self, action_type: str, data: dict):
+        """Push an action to the undo stack"""
+        self.undo_stack.append({
+            'type': action_type,
+            'data': data,
+            'previous_state': self.current_state.copy()
+        })
+        self.save_state()
+
     def undo_action(self):
         """Handle undo action"""
-        QMessageBox.information(self, "Undo", "Undo feature coming soon")
+        if not self.undo_stack:
+            QMessageBox.information(self, "Undo", "Nothing to undo")
+            return
+            
+        # Get last action
+        last_action = self.undo_stack.pop()
+        
+        # Clear current thumbnails
+        while self.thumbnail_layout.count():
+            item = self.thumbnail_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+        
+        # Restore previous state
+        for pdf_path in last_action['previous_state']:
+            self.generate_thumbnail(pdf_path)
+        
+        QMessageBox.information(self, "Undo", f"Undo {last_action['type']} successful")
 
     def redo_action(self):
         """Handle redo action"""
@@ -564,6 +604,9 @@ class PDFCombiner(QMainWindow):
             
     def remove_thumbnail(self, container):
         """Remove a thumbnail from the layout"""
+        if hasattr(container, 'pdf_path'):
+            self.push_to_undo_stack('remove_thumbnail', {'file': container.pdf_path})
+            
         # Remove the widget from the layout
         self.thumbnail_layout.removeWidget(container)
         container.deleteLater()
