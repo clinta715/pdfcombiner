@@ -495,6 +495,8 @@ class PDFCombiner(QMainWindow):
             container_layout = QVBoxLayout()
             container.setLayout(container_layout)
             container.setAcceptDrops(True)
+            container.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            container.customContextMenuRequested.connect(lambda pos, c=container: self.show_context_menu(c, pos))
             
             # Create container with thumbnail and filename
             container_layout.setSpacing(5)
@@ -539,6 +541,26 @@ class PDFCombiner(QMainWindow):
         except Exception as e:
             print(f"Error generating thumbnail: {e}")
 
+    def show_context_menu(self, container, pos):
+        """Show context menu for removing items"""
+        from PyQt6.QtWidgets import QMenu
+        
+        menu = QMenu(self)
+        remove_action = menu.addAction("Remove")
+        action = menu.exec(container.mapToGlobal(pos))
+        
+        if action == remove_action:
+            self.remove_thumbnail(container)
+            
+    def remove_thumbnail(self, container):
+        """Remove a thumbnail from the layout"""
+        # Remove the widget from the layout
+        self.thumbnail_layout.removeWidget(container)
+        container.deleteLater()
+        
+        # Update the PDF order
+        self.update_pdf_order()
+        
     def update_thumbnails(self):
         """Update all thumbnails based on current file list order"""
         # Clear existing thumbnails
