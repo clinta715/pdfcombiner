@@ -42,28 +42,28 @@ class DraggableThumbnail(QWidget):
         # Get the current position in the grid
         layout = self.parent.thumbnail_layout
         index = layout.indexOf(self)
-        row = index // 3
-        col = index % 3
-        
-        # Remove from current position
-        layout.removeWidget(self)
-        self.hide()
         
         # Calculate new position based on mouse
         pos = self.mapToParent(event.position().toPoint())
-        new_index = layout.count()
+        
+        # Find the widget under the mouse position
+        target_index = -1
         for i in range(layout.count()):
             item = layout.itemAt(i)
             if item and item.geometry().contains(pos):
-                new_index = i
+                target_index = i
                 break
                 
-        # Add widget at new position
-        layout.addWidget(self, new_index // 3, new_index % 3)
-        self.show()
-        
-        # Update the order of PDF paths
-        self.parent.update_pdf_order()
+        # If we found a target position and it's different from current
+        if target_index != -1 and target_index != index:
+            # Remove from current position
+            widget = layout.takeAt(index).widget()
+            
+            # Insert at new position
+            layout.insertWidget(target_index, widget)
+            
+            # Update the order of PDF paths
+            self.parent.update_pdf_order()
 
 class PDFCombiner(QMainWindow):
     def __init__(self):
