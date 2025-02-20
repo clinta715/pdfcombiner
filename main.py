@@ -58,8 +58,8 @@ class DraggableThumbnail(QWidget):
                 new_index = i
                 break
                 
-        # Insert at new position
-        layout.insertWidget(new_index, self)
+        # Add widget at new position
+        layout.addWidget(self, new_index // 3, new_index % 3)
         self.show()
         
         # Update the order of PDF paths
