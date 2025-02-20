@@ -168,7 +168,8 @@ class PDFCombiner(QMainWindow):
         for pdf_path in last_action['previous_state']:
             self.generate_thumbnail(pdf_path)
         
-        QMessageBox.information(self, "Undo", f"Undo {last_action['type']} successful")
+        # No confirmation message needed
+        pass
 
     def redo_action(self):
         """Handle redo action"""
