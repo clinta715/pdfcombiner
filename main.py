@@ -379,12 +379,14 @@ class PDFCombiner(QMainWindow):
         file_menu = menu_bar.addMenu("File")
         open_action = file_menu.addAction("Open")
         save_action = file_menu.addAction("Save")
+        print_action = file_menu.addAction("Print")
         file_menu.addSeparator()
         exit_action = file_menu.addAction("Exit")
         
         # Connect actions
         open_action.triggered.connect(self.open_files)
         save_action.triggered.connect(self.save_files)
+        print_action.triggered.connect(self.print_pdf)
         exit_action.triggered.connect(self.close)
         
         # Edit menu
@@ -655,6 +657,44 @@ class PDFCombiner(QMainWindow):
             QMessageBox.information(self, "Success", "PDFs combined successfully!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not combine PDFs: {str(e)}")
+
+    def print_pdf(self):
+        """Handle PDF printing"""
+        from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
+        from PyQt6.QtWidgets import QFileDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Create printer
+        printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+        print_dialog = QPrintDialog(printer, self)
+        
+        if print_dialog.exec() == QPrintDialog.DialogCode.Accepted:
+            try:
+                for pdf_path in pdf_paths:
+                    # Print each PDF
+                    from PyQt6.QtGui import QPdfDocument
+                    document = QPdfDocument(self)
+                    document.load(pdf_path)
+                    
+                    for i in range(document.pageCount()):
+                        if i > 0:
+                            printer.newPage()
+                        page = document.render(i, printer.pageRect().size())
+                        painter = QPainter()
+                        painter.begin(printer)
+                        painter.drawImage(0, 0, page)
+                        painter.end()
+                    
+                QMessageBox.information(self, "Success", "PDFs printed successfully!")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Could not print PDF: {str(e)}")
 
     def update_thumbnails(self):
         """Update all thumbnails based on current file list order"""
