@@ -2,6 +2,8 @@ from PyPDF2 import PdfWriter, PdfReader
 from PyQt6.QtWidgets import QMessageBox
 
 class Security:
+    def __init__(self, parent_window=None):
+        self.parent_window = parent_window
     def validate_password(self, password):
         """Validate password strength"""
         if not password:

@@ -3,7 +3,8 @@ from pdf2image import convert_from_path
 from PyQt6.QtWidgets import QMessageBox  # Updated import
 
 class OCRProcessor:
-    def __init__(self):
+    def __init__(self, parent_window=None):
+        self.parent_window = parent_window
         # OCR Settings
         self.ocr_language = 'eng'  # Default language
         self.ocr_quality = 2       # 1=Fast, 2=Balanced, 3=Best

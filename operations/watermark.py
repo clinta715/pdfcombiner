@@ -2,6 +2,8 @@ from PyPDF2 import PdfReader, PdfWriter
 from PyQt6.QtWidgets import QMessageBox  # Updated import
 
 class Watermark:
+    def __init__(self, parent_window=None):
+        self.parent_window = parent_window
     def add_text_watermark(self, pdf_path, text, font_size, opacity, rotation, color, position):
         try:
             from reportlab.pdfgen import canvas

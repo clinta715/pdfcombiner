@@ -203,7 +203,7 @@ class PDFCombiner(QMainWindow):
             return
             
         # Create and apply watermark
-        watermark = Watermark()
+        watermark = Watermark(self)
         for pdf_path in pdf_paths:
             try:
                 watermark.add_text_watermark(
@@ -317,7 +317,7 @@ class PDFCombiner(QMainWindow):
             return
             
         # Configure OCR processor with settings
-        processor = OCRProcessor()
+        processor = OCRProcessor(self)
         processor.ocr_language = dialog.language_combo.currentText()
         processor.ocr_quality = dialog.quality_combo.currentIndex() + 1
         processor.ocr_psm = dialog.psm_combo.currentIndex()
@@ -395,7 +395,7 @@ class PDFCombiner(QMainWindow):
             return
             
         # Encrypt each file
-        security = Security()
+        security = Security(self)
         for pdf_path in pdf_paths:
             try:
                 security.encrypt_pdf(pdf_path, password, {})
@@ -526,7 +526,7 @@ class PDFCombiner(QMainWindow):
             return
             
         # Apply redactions
-        redaction = Redaction()
+        redaction = Redaction(self)
         for pdf_path in pdf_paths:
             try:
                 redaction.redact_pdf(pdf_path, redactions)

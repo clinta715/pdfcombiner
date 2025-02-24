@@ -2,6 +2,8 @@ import fitz
 from PyQt6.QtWidgets import QMessageBox
 
 class Redaction:
+    def __init__(self, parent_window=None):
+        self.parent_window = parent_window
     def redact_pdf(self, pdf_path, redactions):
         try:
             doc = fitz.open(pdf_path)
