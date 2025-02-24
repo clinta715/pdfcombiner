@@ -59,7 +59,6 @@ class PDFOperations:
             merger.write(output_file)
             if progress_dialog:
                 progress_dialog.close()
-            QMessageBox.information(None, "Success", "PDFs combined successfully!")
         except Exception as e:
             QMessageBox.critical(None, "Error", f"Failed to combine PDFs: {str(e)}")
         finally:
