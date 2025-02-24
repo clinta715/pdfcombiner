@@ -321,6 +321,46 @@ class PDFCombiner(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not encrypt PDF: {str(e)}")
 
+    def compress_pdf(self):
+        """Handle PDF compression"""
+        from operations.compression import PDFCompressor
+        from PyQt6.QtWidgets import QInputDialog
+        
+        # Get selected files from thumbnails
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+                    if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
+        
+        if not pdf_paths:
+            QMessageBox.warning(self, "No Files", "Please add PDF files first")
+            return
+            
+        # Get compression level
+        levels = ["Fast (lower quality)", "Balanced", "Best (higher quality)"]
+        level, ok = QInputDialog.getItem(
+            self,
+            "Select Compression Level",
+            "Choose compression quality:",
+            levels,
+            current=1,
+            editable=False
+        )
+        
+        if not ok:
+            return
+            
+        quality_level = levels.index(level) + 1
+        
+        # Compress each file
+        compressor = PDFCompressor()
+        for pdf_path in pdf_paths:
+            try:
+                compressor.compress_pdf(pdf_path, quality_level)
+                QMessageBox.information(self, "Success", 
+                    f"PDF compressed successfully: {pdf_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", 
+                    f"Could not compress PDF: {str(e)}")
+
     def decrypt_pdf(self):
         """Handle PDF decryption"""
         from operations.security import Security
@@ -460,6 +500,10 @@ class PDFCombiner(QMainWindow):
         encrypt_action.triggered.connect(self.encrypt_pdf)
         decrypt_action = security_menu.addAction("Decrypt PDF")
         decrypt_action.triggered.connect(self.decrypt_pdf)
+        
+        # Compression
+        compression_action = operations_menu.addAction("Compress PDF")
+        compression_action.triggered.connect(self.compress_pdf)
         
         # Redaction
         redaction_action = operations_menu.addAction("Redact PDF")
