@@ -56,12 +56,11 @@ class PDFCompressor:
             # Replace original file
             os.replace(temp_file, pdf_path)
 
-            # Show success message
-            QMessageBox.information(None, "Success", 
-                f"PDF compressed successfully!\n"
-                f"Original size: {os.path.getsize(pdf_path) / 1024:.1f} KB\n"
-                f"New size: {os.path.getsize(pdf_path) / 1024:.1f} KB")
+            # Update status
+            self.parent_window.show_status_message(
+                f"PDF compressed: {os.path.getsize(pdf_path) / 1024:.1f} KB (was {original_size / 1024:.1f} KB)",
+                5000
+            )
 
         except Exception as e:
-            QMessageBox.critical(None, "Error", 
-                f"Could not compress PDF: {str(e)}")
+            self.parent_window.show_status_message(f"Compression error: {str(e)}", 5000)

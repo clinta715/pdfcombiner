@@ -55,7 +55,7 @@ class Watermark:
             import os
             os.replace(temp_file, pdf_path)
 
-            QMessageBox.information(None, "Success", "Text watermark added successfully!")
+            self.parent_window.show_status_message("Text watermark added successfully!", 3000)
 
         except Exception as e:
-            QMessageBox.critical(None, "Error", f"Could not add watermark: {str(e)}")
+            self.parent_window.show_status_message(f"Watermark error: {str(e)}", 5000)

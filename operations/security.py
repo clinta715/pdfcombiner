@@ -44,16 +44,6 @@ class Security:
             import os
             os.replace(temp_file, pdf_path)
 
-            # Updated to PyQt6 style
-            msg = QMessageBox()
-            msg.setWindowTitle("Success")
-            msg.setText("PDF encrypted successfully!")
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.exec()
+            self.parent_window.show_status_message("PDF encrypted successfully!", 3000)
         except Exception as e:
-            # Updated to PyQt6 style
-            msg = QMessageBox()
-            msg.setWindowTitle("Error")
-            msg.setText(f"Could not encrypt PDF: {str(e)}")
-            msg.setIcon(QMessageBox.Icon.Critical)
-            msg.exec()
+            self.parent_window.show_status_message(f"Encryption error: {str(e)}", 5000)

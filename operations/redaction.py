@@ -17,16 +17,6 @@ class Redaction:
             import os
             os.replace(temp_file, pdf_path)
 
-            # Updated to PyQt6 style
-            msg = QMessageBox()
-            msg.setWindowTitle("Success")
-            msg.setText("PDF redacted successfully!")
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.exec()
+            self.parent_window.show_status_message("PDF redacted successfully!", 3000)
         except Exception as e:
-            # Updated to PyQt6 style
-            msg = QMessageBox()
-            msg.setWindowTitle("Error")
-            msg.setText(f"Could not redact PDF: {str(e)}")
-            msg.setIcon(QMessageBox.Icon.Critical)
-            msg.exec()
+            self.parent_window.show_status_message(f"Redaction error: {str(e)}", 5000)

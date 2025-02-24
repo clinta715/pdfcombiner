@@ -120,28 +120,23 @@ class Metadata:
             # Replace original file
             os.replace(temp_file, pdf_path)
 
-            # Show success message
-            msg = QMessageBox()
-            msg.setWindowTitle("Success")
-            msg.setText("Metadata updated successfully!")
-            msg.setInformativeText(f"A backup was created at: {backup_path}")
-            msg.setIcon(QMessageBox.Icon.Information)
-            msg.exec()
+            # Update status
+            self.parent_window.show_status_message(
+                f"Metadata updated successfully! Backup created at: {backup_path}", 
+                5000
+            )
 
         except MetadataError as me:
-            msg = QMessageBox()
-            msg.setWindowTitle("Validation Error")
-            msg.setText(str(me))
-            msg.setIcon(QMessageBox.Icon.Warning)
-            msg.exec()
+            self.parent_window.show_status_message(
+                f"Metadata validation error: {str(me)}",
+                5000
+            )
 
         except Exception as e:
-            msg = QMessageBox()
-            msg.setWindowTitle("Error")
-            msg.setText(f"Could not edit metadata: {str(e)}")
-            msg.setDetailedText(f"Error details:\n{str(e)}\n\nIf a backup was created, you can find it at: {backup_path}")
-            msg.setIcon(QMessageBox.Icon.Critical)
-            msg.exec()
+            self.parent_window.show_status_message(
+                f"Metadata error: {str(e)}. Backup at: {backup_path}",
+                5000
+            )
 
         finally:
             # Clean up temporary file if it exists
