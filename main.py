@@ -5,7 +5,7 @@ import os
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLayout, 
                             QWidget, QTabWidget, QListWidget, QListWidgetItem, QMessageBox,
                             QLineEdit, QLabel, QScrollArea, QGridLayout, QPushButton,
-                            QDialogButtonBox)
+                            QDialogButtonBox, QStatusBar, QProgressBar)
 from PyQt6.QtCore import Qt, QMimeData, QPoint
 from PyQt6.QtGui import QPixmap, QMouseEvent, QPainter
 import fitz  # PyMuPDF
