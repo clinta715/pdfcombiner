@@ -84,6 +84,9 @@ class PDFCombiner(QMainWindow):
         self.undo_stack = []
         self.current_state = []
         
+        # Set up status bar
+        self.setup_status_bar()
+        
         # Create menu bar first
         self.create_menu_bar()
         
@@ -531,6 +534,42 @@ class PDFCombiner(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not redact PDF: {str(e)}")
         
+    def setup_status_bar(self):
+        """Create and configure the status bar"""
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+        
+        # Add permanent widgets
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setMaximumWidth(200)
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(100)
+        self.progress_bar.setVisible(False)
+        
+        self.status_label = QLabel("Ready")
+        self.status_label.setMinimumWidth(200)
+        
+        self.status_bar.addPermanentWidget(self.status_label)
+        self.status_bar.addPermanentWidget(self.progress_bar)
+        
+    def show_status_message(self, message: str, timeout: int = 5000):
+        """Show a temporary status message"""
+        self.status_bar.showMessage(message, timeout)
+        
+    def show_progress(self, value: int, maximum: int = 100):
+        """Show progress bar with current value"""
+        self.progress_bar.setMaximum(maximum)
+        self.progress_bar.setValue(value)
+        self.progress_bar.setVisible(True)
+        
+    def hide_progress(self):
+        """Hide the progress bar"""
+        self.progress_bar.setVisible(False)
+        
+    def update_status_label(self, text: str):
+        """Update the permanent status label"""
+        self.status_label.setText(text)
+
     def create_menu_bar(self):
         """Create and configure the menu bar"""
         menu_bar = self.menuBar()
