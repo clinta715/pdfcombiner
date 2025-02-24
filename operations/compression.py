@@ -25,6 +25,9 @@ class PDFCompressor:
             if quality_level not in (1, 2, 3):
                 raise ValueError("Quality level must be 1, 2, or 3")
 
+            # Get original size before compression
+            original_size = os.path.getsize(pdf_path)
+            
             # Create PDF reader and writer
             reader = PdfReader(pdf_path)
             writer = PdfWriter()
