@@ -4,9 +4,18 @@ from PyQt6.QtWidgets import QMessageBox  # Updated import
 
 class OCRProcessor:
     def __init__(self):
-        self.ocr_language = 'eng'
-        self.ocr_quality = 2
-        self.ocr_page_range = None
+        # OCR Settings
+        self.ocr_language = 'eng'  # Default language
+        self.ocr_quality = 2       # 1=Fast, 2=Balanced, 3=Best
+        self.ocr_page_range = None # Specific pages to process
+        self.ocr_deskew = True     # Auto deskew images
+        self.ocr_clean = True      # Clean up images before OCR
+        self.ocr_psm = 3           # Page segmentation mode
+        self.ocr_oem = 1           # OCR Engine mode (1=LSTM only)
+        self.ocr_dpi = 300         # Default DPI
+        self.ocr_contrast = 1.0    # Contrast adjustment
+        self.ocr_brightness = 1.0  # Brightness adjustment
+        self.ocr_threshold = 0     # Binarization threshold (0=auto)
 
     def perform_ocr(self, pdf_path):
         try:
@@ -19,8 +28,18 @@ class OCRProcessor:
 
             ocr_text = ""
             for i, page in enumerate(pages):
+                # Preprocess image
+                page = self.preprocess_image(page)
+                
+                # Get OCR config
                 config = self.get_ocr_config()
-                text = pytesseract.image_to_string(page, lang=self.ocr_language, config=config)
+                
+                # Perform OCR
+                text = pytesseract.image_to_string(
+                    page, 
+                    lang=self.ocr_language, 
+                    config=config
+                )
                 ocr_text += f"--- Page {i+1} ---\n{text}\n\n"
 
             return ocr_text
@@ -29,16 +48,50 @@ class OCRProcessor:
             return ""
 
     def get_ocr_dpi(self):
+        """Get DPI based on quality setting"""
         return {
             1: 200,  # Fast
             2: 300,  # Balanced
             3: 400   # Best
-        }.get(self.ocr_quality, 300)
+        }.get(self.ocr_quality, self.ocr_dpi)
 
     def get_ocr_config(self):
-        if self.ocr_quality == 1:  # Fast
-            return '--oem 1 --psm 3'  # LSTM OCR, auto page segmentation
-        elif self.ocr_quality == 3:  # Best
-            return '--oem 1 --psm 6'  # LSTM OCR, assume uniform block of text
-        else:  # Balanced
-            return '--oem 1 --psm 4'  # LSTM OCR, assume single column of text
+        """Generate Tesseract config string based on settings"""
+        config = []
+        
+        # OCR Engine Mode
+        config.append(f'--oem {self.ocr_oem}')
+        
+        # Page Segmentation Mode
+        config.append(f'--psm {self.ocr_psm}')
+        
+        # Image processing options
+        if self.ocr_deskew:
+            config.append('--deskew 1')
+        if self.ocr_clean:
+            config.append('--clean 1')
+        if self.ocr_threshold > 0:
+            config.append(f'--threshold {self.ocr_threshold}')
+            
+        return ' '.join(config)
+
+    def preprocess_image(self, image):
+        """Apply preprocessing to image before OCR"""
+        from PIL import ImageEnhance, ImageFilter
+        
+        # Adjust contrast
+        if self.ocr_contrast != 1.0:
+            enhancer = ImageEnhance.Contrast(image)
+            image = enhancer.enhance(self.ocr_contrast)
+            
+        # Adjust brightness
+        if self.ocr_brightness != 1.0:
+            enhancer = ImageEnhance.Brightness(image)
+            image = enhancer.enhance(self.ocr_brightness)
+            
+        # Apply threshold if specified
+        if self.ocr_threshold > 0:
+            image = image.convert('L').point(
+                lambda x: 0 if x < self.ocr_threshold else 255, '1')
+            
+        return image
