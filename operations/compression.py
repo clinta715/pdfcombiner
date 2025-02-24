@@ -3,6 +3,9 @@ from PyQt6.QtWidgets import QMessageBox
 import os
 
 class PDFCompressor:
+    def __init__(self, parent_window=None):
+        self.parent_window = parent_window
+        
     def compress_pdf(self, pdf_path, quality_level):
         """
         Compress a PDF file with specified quality level

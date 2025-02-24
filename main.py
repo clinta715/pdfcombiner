@@ -430,7 +430,7 @@ class PDFCombiner(QMainWindow):
         quality_level = levels.index(level) + 1
         
         # Compress each file
-        compressor = PDFCompressor()
+        compressor = PDFCompressor(self)
         for pdf_path in pdf_paths:
             try:
                 compressor.compress_pdf(pdf_path, quality_level)
