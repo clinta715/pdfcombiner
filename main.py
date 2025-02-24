@@ -819,8 +819,13 @@ class PDFCombiner(QMainWindow):
             
         try:
             from operations.pdf_operations import PDFOperations
+            from ui.progress_dialog import ProgressDialog
+            
+            progress_dialog = ProgressDialog(self)
+            progress_dialog.progress_bar.setMaximum(len(pdf_paths))
+            
             pdf_ops = PDFOperations()
-            pdf_ops.combine_pdfs(pdf_paths, output_file, None)
+            pdf_ops.combine_pdfs(pdf_paths, output_file, progress_dialog)
             QMessageBox.information(self, "Success", "PDFs combined successfully!")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Could not combine PDFs: {str(e)}")
