@@ -61,6 +61,12 @@ class OCRProcessor:
                 
             return ocr_text
 
+        except Exception as e:
+            if self.parent_window:
+                self.parent_window.show_status_message(f"OCR error: {str(e)}", 5000)
+                self.parent_window.hide_progress()
+            return ""
+
     def handle_ocr_output(self, ocr_text, pdf_path, output_option):
         """Handle OCR output based on selected option"""
         try:
