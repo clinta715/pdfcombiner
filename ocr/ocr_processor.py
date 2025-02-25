@@ -55,6 +55,9 @@ class OCRProcessor:
                 )
                 ocr_text += f"--- Page {i+1} ---\n{text}\n\n"
 
+            if not ocr_text.strip():
+                raise ValueError("OCR produced no text - check input file and settings")
+                
             if self.parent_window:
                 self.parent_window.show_status_message("OCR completed successfully", 3000)
                 self.parent_window.hide_progress()
@@ -62,14 +65,21 @@ class OCRProcessor:
             return ocr_text
 
         except Exception as e:
+            error_msg = f"OCR error: {str(e)}"
+            if "incorrect parameter" in str(e).lower():
+                error_msg = "Invalid OCR settings - please check your configuration"
+                
             if self.parent_window:
-                self.parent_window.show_status_message(f"OCR error: {str(e)}", 5000)
+                self.parent_window.show_status_message(error_msg, 5000)
                 self.parent_window.hide_progress()
             return ""
 
     def handle_ocr_output(self, ocr_text, pdf_path, output_option):
         """Handle OCR output based on selected option"""
         try:
+            if not ocr_text.strip():
+                raise ValueError("No OCR text to process")
+                
             if output_option == "Text file (auto-named)":
                 output_path = pdf_path.replace('.pdf', '_ocr.txt')
                 with open(output_path, 'w', encoding='utf-8') as f:
