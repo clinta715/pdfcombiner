@@ -155,8 +155,10 @@ class OCRProcessor:
                 self.setLayout(layout)
             
             def copy_text(self):
-                self.parent().clipboard().setText(self.text_edit.toPlainText())
-                self.parent().show_status_message("Text copied to clipboard", 3000)
+                clipboard = QApplication.clipboard()
+                clipboard.setText(self.text_edit.toPlainText())
+                if self.parent():
+                    self.parent().show_status_message("Text copied to clipboard", 3000)
         
         dialog = OCRResultsDialog(text, self.parent_window)
         dialog.exec()
