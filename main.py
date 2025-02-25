@@ -395,12 +395,12 @@ class PDFCombiner(QMainWindow):
             return
             
         # Get password
-        password, ok = QInputDialog.getText(self, "Encrypt PDF", "Enter password:", echo=QLineEdit.Password)
+        password, ok = QInputDialog.getText(self, "Encrypt PDF", "Enter password:", echo=QLineEdit.EchoMode.Password)
         if not ok or not password:
             return
             
         # Get confirmation
-        confirm_password, ok = QInputDialog.getText(self, "Confirm Password", "Confirm password:", echo=QLineEdit.Password)
+        confirm_password, ok = QInputDialog.getText(self, "Confirm Password", "Confirm password:", echo=QLineEdit.EchoMode.Password)
         if not ok or password != confirm_password:
             QMessageBox.warning(self, "Error", "Passwords do not match")
             return
