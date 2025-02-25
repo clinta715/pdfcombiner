@@ -407,12 +407,20 @@ class PDFCombiner(QMainWindow):
             
         # Encrypt each file
         security = Security(self)
+        success_count = 0
         for pdf_path in pdf_paths:
             try:
-                security.encrypt_pdf(pdf_path, password, {})
-                QMessageBox.information(self, "Success", f"PDF encrypted successfully: {pdf_path}")
+                if security.encrypt_pdf(pdf_path, password, {}):
+                    success_count += 1
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not encrypt PDF: {str(e)}")
+            
+        if success_count > 0:
+            QMessageBox.information(
+                self, 
+                "Success", 
+                f"Successfully encrypted {success_count} PDF(s)"
+            )
 
     def compress_pdf(self):
         """Handle PDF compression"""

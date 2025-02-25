@@ -28,8 +28,12 @@ class Security:
             # Validate password first
             self.validate_password(password)
             
-            writer = PdfWriter()
+            # Check if PDF is already encrypted
             reader = PdfReader(pdf_path)
+            if reader.is_encrypted:
+                raise ValueError("PDF is already encrypted")
+
+            writer = PdfWriter()
             writer.append_pages_from_reader(reader)
 
             # Use different owner password
@@ -47,5 +51,10 @@ class Security:
             os.replace(temp_file, pdf_path)
 
             self.parent_window.show_status_message("PDF encrypted successfully!", 3000)
+            return True
+            
+        except ValueError as e:
+            self.parent_window.show_status_message(f"Encryption error: {str(e)}", 5000)
+            return False
         except Exception as e:
             self.parent_window.show_status_message(f"Encryption error: {str(e)}", 5000)
