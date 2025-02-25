@@ -126,8 +126,6 @@ class OCRProcessor:
         config.append(f'--psm {self.ocr_psm}')
         
         # Image processing options
-        if self.ocr_clean:
-            config.append('--clean 1')
         if self.ocr_threshold > 0:
             config.append(f'--threshold {self.ocr_threshold}')
             
