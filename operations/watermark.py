@@ -76,7 +76,6 @@ class Watermark:
             with open(temp_file, 'wb') as f:
                 output_pdf.write(f)
 
-            import os
             os.replace(temp_file, pdf_path)
 
             if self.parent_window:
