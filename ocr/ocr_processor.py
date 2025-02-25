@@ -1,6 +1,7 @@
+import os
 import pytesseract
 from pdf2image import convert_from_path
-from PyQt6.QtWidgets import QMessageBox  # Updated import
+from PyQt6.QtWidgets import QMessageBox, QApplication
 
 class OCRProcessor:
     def __init__(self, parent_window=None):

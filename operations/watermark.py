@@ -1,5 +1,6 @@
+import os
 from PyPDF2 import PdfReader, PdfWriter
-from PyQt6.QtWidgets import QMessageBox  # Updated import
+from PyQt6.QtWidgets import QMessageBox, QApplication
 
 class Watermark:
     def __init__(self, parent_window=None):
