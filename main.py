@@ -301,6 +301,16 @@ class PDFCombiner(QMainWindow):
                 self.threshold_spin.setSpecialValueText("Auto")
                 layout.addRow("Threshold:", self.threshold_spin)
                 
+                # Output destination
+                self.output_combo = QComboBox()
+                self.output_combo.addItems([
+                    "Text file (auto-named)",
+                    "Clipboard",
+                    "Text window",
+                    "New PDF file"
+                ])
+                layout.addRow("Output Destination:", self.output_combo)
+                
                 # Buttons
                 self.button_box = QDialogButtonBox(
                     QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -329,9 +339,10 @@ class PDFCombiner(QMainWindow):
         
         for pdf_path in pdf_paths:
             try:
-                output_path = pdf_path.replace('.pdf', '_ocr.pdf')
-                processor.perform_ocr(pdf_path)
-                QMessageBox.information(self, "OCR Complete", f"OCR completed. Output saved to {output_path}")
+                ocr_text = processor.perform_ocr(pdf_path)
+                if ocr_text:
+                    output_option = dialog.output_combo.currentText()
+                    processor.handle_ocr_output(ocr_text, pdf_path, output_option)
             except Exception as e:
                 QMessageBox.critical(self, "OCR Error", f"Could not perform OCR on {pdf_path}: {str(e)}")
 

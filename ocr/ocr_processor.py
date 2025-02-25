@@ -60,6 +60,31 @@ class OCRProcessor:
                 self.parent_window.hide_progress()
                 
             return ocr_text
+
+    def handle_ocr_output(self, ocr_text, pdf_path, output_option):
+        """Handle OCR output based on selected option"""
+        try:
+            if output_option == "Text file (auto-named)":
+                output_path = pdf_path.replace('.pdf', '_ocr.txt')
+                with open(output_path, 'w', encoding='utf-8') as f:
+                    f.write(ocr_text)
+                self.parent_window.show_status_message(f"OCR text saved to {output_path}", 5000)
+                
+            elif output_option == "Clipboard":
+                clipboard = QApplication.clipboard()
+                clipboard.setText(ocr_text)
+                self.parent_window.show_status_message("OCR text copied to clipboard", 3000)
+                
+            elif output_option == "Text window":
+                self.show_ocr_results(ocr_text)
+                
+            elif output_option == "New PDF file":
+                output_path = pdf_path.replace('.pdf', '_ocr.pdf')
+                self.save_ocr_as_pdf(ocr_text, output_path)
+                self.parent_window.show_status_message(f"OCR PDF saved to {output_path}", 5000)
+                
+        except Exception as e:
+            self.parent_window.show_status_message(f"Error handling OCR output: {str(e)}", 5000)
         except Exception as e:
             if self.parent_window:
                 self.parent_window.show_status_message(f"OCR error: {str(e)}", 5000)
@@ -93,6 +118,68 @@ class OCRProcessor:
             config.append(f'--threshold {self.ocr_threshold}')
             
         return ' '.join(config)
+
+    def show_ocr_results(self, text):
+        """Display OCR results in a scrollable window"""
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton
+        
+        class OCRResultsDialog(QDialog):
+            def __init__(self, text, parent=None):
+                super().__init__(parent)
+                self.setWindowTitle("OCR Results")
+                self.setMinimumSize(600, 400)
+                
+                layout = QVBoxLayout()
+                
+                self.text_edit = QTextEdit()
+                self.text_edit.setPlainText(text)
+                self.text_edit.setReadOnly(True)
+                layout.addWidget(self.text_edit)
+                
+                self.copy_button = QPushButton("Copy to Clipboard")
+                self.copy_button.clicked.connect(self.copy_text)
+                layout.addWidget(self.copy_button)
+                
+                self.setLayout(layout)
+            
+            def copy_text(self):
+                self.parent().clipboard().setText(self.text_edit.toPlainText())
+                self.parent().show_status_message("Text copied to clipboard", 3000)
+        
+        dialog = OCRResultsDialog(text, self.parent_window)
+        dialog.exec()
+
+    def save_ocr_as_pdf(self, text, output_path):
+        """Save OCR text as a PDF file"""
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import letter
+        from io import BytesIO
+        
+        packet = BytesIO()
+        can = canvas.Canvas(packet, pagesize=letter)
+        width, height = letter
+        
+        # Set up text formatting
+        can.setFont("Helvetica", 12)
+        line_height = 14
+        margin = 50
+        x = margin
+        y = height - margin
+        
+        # Split text into lines and write to PDF
+        for line in text.split('\n'):
+            if y < margin:  # Start new page
+                can.showPage()
+                y = height - margin
+                
+            can.drawString(x, y, line)
+            y -= line_height
+            
+        can.save()
+        
+        # Write to output file
+        with open(output_path, 'wb') as f:
+            f.write(packet.getvalue())
 
     def preprocess_image(self, image):
         """Apply preprocessing to image before OCR"""
