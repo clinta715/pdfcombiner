@@ -9,6 +9,9 @@ class MetadataError(Exception):
     pass
 
 class Metadata:
+    def __init__(self, parent_window=None):
+        self.parent_window = parent_window
+        
     # Standard PDF metadata keys (must start with / according to PDF spec)
     VALID_KEYS = {
         '/Title', '/Author', '/Subject', '/Keywords', '/Creator', '/Producer',

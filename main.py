@@ -374,7 +374,7 @@ class PDFCombiner(QMainWindow):
                 metadata[field] = value
                 
         # Apply metadata to each file
-        meta = Metadata()
+        meta = Metadata(self)
         for pdf_path in pdf_paths:
             try:
                 meta.edit_metadata(pdf_path, metadata)
