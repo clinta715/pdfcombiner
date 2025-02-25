@@ -6,6 +6,20 @@ class Watermark:
         self.parent_window = parent_window
     def add_text_watermark(self, pdf_path, text, font_size, opacity, rotation, color, position):
         try:
+            if not os.path.exists(pdf_path):
+                raise ValueError("PDF file does not exist")
+                
+            if not pdf_path.lower().endswith('.pdf'):
+                raise ValueError("File must be a PDF")
+                
+            if not text:
+                raise ValueError("Watermark text cannot be empty")
+                
+            if self.parent_window:
+                self.parent_window.show_status_message("Adding watermark...")
+                self.parent_window.update_status_label("Processing watermark")
+                self.parent_window.show_progress(0, 100)
+
             from reportlab.pdfgen import canvas
             from reportlab.lib.pagesizes import A4
             from io import BytesIO
@@ -45,7 +59,14 @@ class Watermark:
             original_pdf = PdfReader(pdf_path)
             output_pdf = PdfWriter()
 
-            for i in range(len(original_pdf.pages)):
+            total_pages = len(original_pdf.pages)
+            for i in range(total_pages):
+                if self.parent_window:
+                    progress = int((i + 1) / total_pages * 100)
+                    self.parent_window.show_progress(progress)
+                    self.parent_window.update_status_label(f"Processing page {i+1}/{total_pages}")
+                    QApplication.processEvents()
+
                 page = original_pdf.pages[i]
                 page.merge_page(watermark_pdf.pages[0])
                 output_pdf.add_page(page)
@@ -57,7 +78,12 @@ class Watermark:
             import os
             os.replace(temp_file, pdf_path)
 
-            self.parent_window.show_status_message("Text watermark added successfully!", 3000)
+            if self.parent_window:
+                self.parent_window.show_status_message("Watermark added successfully", 3000)
+                self.parent_window.hide_progress()
 
         except Exception as e:
-            self.parent_window.show_status_message(f"Watermark error: {str(e)}", 5000)
+            if self.parent_window:
+                self.parent_window.show_status_message(f"Watermark error: {str(e)}", 5000)
+                self.parent_window.hide_progress()
+            raise

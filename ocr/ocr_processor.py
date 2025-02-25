@@ -20,6 +20,12 @@ class OCRProcessor:
 
     def perform_ocr(self, pdf_path):
         try:
+            if not os.path.exists(pdf_path):
+                raise ValueError("PDF file does not exist")
+                
+            if not pdf_path.lower().endswith('.pdf'):
+                raise ValueError("File must be a PDF")
+
             pages = convert_from_path(pdf_path, dpi=self.get_ocr_dpi())
             total_pages = len(pages)
 
@@ -29,6 +35,11 @@ class OCRProcessor:
 
             ocr_text = ""
             for i, page in enumerate(pages):
+                if self.parent_window:
+                    self.parent_window.show_progress(i + 1, total_pages)
+                    self.parent_window.update_status_label(f"Processing page {i+1}/{total_pages}")
+                    QApplication.processEvents()
+
                 # Preprocess image
                 page = self.preprocess_image(page)
                 
@@ -43,9 +54,15 @@ class OCRProcessor:
                 )
                 ocr_text += f"--- Page {i+1} ---\n{text}\n\n"
 
+            if self.parent_window:
+                self.parent_window.show_status_message("OCR completed successfully", 3000)
+                self.parent_window.hide_progress()
+                
             return ocr_text
         except Exception as e:
-            QMessageBox.critical(None, "OCR Error", f"Could not perform OCR: {str(e)}")
+            if self.parent_window:
+                self.parent_window.show_status_message(f"OCR error: {str(e)}", 5000)
+                self.parent_window.hide_progress()
             return ""
 
     def get_ocr_dpi(self):
