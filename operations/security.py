@@ -1,5 +1,5 @@
 from PyPDF2 import PdfWriter, PdfReader
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QApplication
 
 class Security:
     def __init__(self, parent_window=None):

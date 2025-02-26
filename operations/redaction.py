@@ -1,5 +1,5 @@
 import fitz
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QApplication
 
 class Redaction:
     def __init__(self, parent_window=None):
