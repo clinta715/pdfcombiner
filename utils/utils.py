@@ -111,6 +111,32 @@ def validate_output_directory(directory: str) -> Tuple[bool, str]:
     except Exception as e:
         return False, f"Error validating directory: {str(e)}"
 
+import random
+import string
+
+def generate_password() -> str:
+    """Generate a random password that meets complexity requirements"""
+    # Define character sets
+    uppercase = string.ascii_uppercase
+    lowercase = string.ascii_lowercase
+    digits = string.digits
+    
+    # Ensure we have at least one of each required character type
+    password = [
+        random.choice(uppercase),
+        random.choice(lowercase),
+        random.choice(digits)
+    ]
+    
+    # Add random characters to reach minimum length
+    all_chars = uppercase + lowercase + digits
+    password.extend(random.choice(all_chars) for _ in range(5))  # Total length 8
+    
+    # Shuffle to avoid predictable patterns
+    random.shuffle(password)
+    
+    return ''.join(password)
+
 def get_safe_filename(filename: str) -> str:
     """
     Convert a filename to a safe version that can be used on all operating systems.

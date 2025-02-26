@@ -379,22 +379,71 @@ class PDFCombiner(QMainWindow):
             QMessageBox.warning(self, "No Files", "Please add PDF files first")
             return
             
-        # Get password with requirements note
-        password, ok = QInputDialog.getText(
-            self, 
-            "Encrypt PDF", 
-            "Enter password (must be at least 8 characters with:\n- One uppercase letter\n- One lowercase letter\n- One digit):", 
-            echo=QLineEdit.EchoMode.Password
-        )
+        # Create password dialog with generate button
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout
+        
+        class PasswordDialog(QDialog):
+            def __init__(self, parent=None):
+                super().__init__(parent)
+                self.setWindowTitle("Encrypt PDF")
+                self.setMinimumWidth(400)
+                
+                layout = QVBoxLayout()
+                
+                # Password requirements label
+                requirements = QLabel(
+                    "Password must be at least 8 characters with:\n"
+                    "- One uppercase letter\n"
+                    "- One lowercase letter\n"
+                    "- One digit"
+                )
+                layout.addWidget(requirements)
+                
+                # Password input field
+                self.password_edit = QLineEdit()
+                self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
+                layout.addWidget(self.password_edit)
+                
+                # Generate password button
+                generate_btn = QPushButton("Generate Password")
+                generate_btn.clicked.connect(self.generate_password)
+                layout.addWidget(generate_btn)
+                
+                # Buttons
+                button_box = QDialogButtonBox(
+                    QDialogButtonBox.StandardButton.Ok | 
+                    QDialogButtonBox.StandardButton.Cancel
+                )
+                button_box.accepted.connect(self.accept)
+                button_box.rejected.connect(self.reject)
+                layout.addWidget(button_box)
+                
+                self.setLayout(layout)
+            
+            def generate_password(self):
+                """Generate and set a random password"""
+                from utils.utils import generate_password
+                password = generate_password()
+                self.password_edit.setText(password)
+            
+            def get_password(self):
+                return self.password_edit.text()
+        
+        # Show password dialog
+        dialog = PasswordDialog(self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+            
+        password = dialog.get_password()
         if not ok or not password:
             return
             
-        # Get confirmation
+        # Show confirmation dialog with password visible
         confirm_password, ok = QInputDialog.getText(
             self, 
             "Confirm Password", 
-            "Confirm password:", 
-            echo=QLineEdit.EchoMode.Password
+            f"Confirm password (generated: {password}):", 
+            echo=QLineEdit.EchoMode.Normal
         )
         if not ok or password != confirm_password:
             QMessageBox.warning(self, "Error", "Passwords do not match")
