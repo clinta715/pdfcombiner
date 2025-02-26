@@ -394,15 +394,32 @@ class PDFCombiner(QMainWindow):
             QMessageBox.warning(self, "No Files", "Please add PDF files first")
             return
             
-        # Get password
-        password, ok = QInputDialog.getText(self, "Encrypt PDF", "Enter password:", echo=QLineEdit.EchoMode.Password)
+        # Get password with requirements note
+        password, ok = QInputDialog.getText(
+            self, 
+            "Encrypt PDF", 
+            "Enter password (must be at least 8 characters with:\n- One uppercase letter\n- One lowercase letter\n- One digit):", 
+            echo=QLineEdit.EchoMode.Password
+        )
         if not ok or not password:
             return
             
         # Get confirmation
-        confirm_password, ok = QInputDialog.getText(self, "Confirm Password", "Confirm password:", echo=QLineEdit.EchoMode.Password)
+        confirm_password, ok = QInputDialog.getText(
+            self, 
+            "Confirm Password", 
+            "Confirm password:", 
+            echo=QLineEdit.EchoMode.Password
+        )
         if not ok or password != confirm_password:
             QMessageBox.warning(self, "Error", "Passwords do not match")
+            return
+            
+        # Validate password before proceeding
+        try:
+            security.validate_password(password)
+        except ValueError as e:
+            QMessageBox.warning(self, "Invalid Password", str(e))
             return
             
         # Encrypt each file
