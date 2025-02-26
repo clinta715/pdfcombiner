@@ -415,15 +415,15 @@ class PDFCombiner(QMainWindow):
             QMessageBox.warning(self, "Error", "Passwords do not match")
             return
             
-        # Validate password before proceeding
+        # Create security instance and validate password
+        security = Security(self)
         try:
             security.validate_password(password)
         except ValueError as e:
             QMessageBox.warning(self, "Invalid Password", str(e))
             return
-            
+                
         # Encrypt each file
-        security = Security(self)
         success_count = 0
         for pdf_path in pdf_paths:
             try:
