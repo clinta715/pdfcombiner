@@ -435,7 +435,7 @@ class PDFCombiner(QMainWindow):
             return
             
         password = dialog.get_password()
-        if not ok or not password:
+        if not password:
             return
             
         # Show confirmation dialog with password visible
