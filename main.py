@@ -349,7 +349,6 @@ class PDFCombiner(QMainWindow):
     def edit_metadata(self):
         """Handle metadata editing"""
         from operations.metadata import Metadata
-        from PyQt6.QtWidgets import QInputDialog
         
         # Get selected files from thumbnails
         pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
@@ -359,25 +358,11 @@ class PDFCombiner(QMainWindow):
             QMessageBox.warning(self, "No Files", "Please add PDF files first")
             return
             
-        # Get metadata fields
-        metadata = {
-            'Title': '',
-            'Author': '',
-            'Subject': '',
-            'Keywords': '',
-            'Creator': 'PDF Combiner'
-        }
-        
-        for field in ['Title', 'Author', 'Subject', 'Keywords']:
-            value, ok = QInputDialog.getText(self, f"Enter {field}", f"{field}:")
-            if ok:
-                metadata[field] = value
-                
-        # Apply metadata to each file
+        # Edit metadata for each file
         meta = Metadata(self)
         for pdf_path in pdf_paths:
             try:
-                meta.edit_metadata(pdf_path, metadata)
+                meta.show_metadata_dialog(pdf_path)
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not edit metadata for {pdf_path}: {str(e)}")
 

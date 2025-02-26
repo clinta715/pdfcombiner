@@ -76,6 +76,65 @@ class Metadata:
         except Exception as e:
             raise MetadataError(f"Failed to create backup: {str(e)}")
 
+    def show_metadata_dialog(self, pdf_path: str) -> None:
+        """Show metadata editing dialog"""
+        from PyQt6.QtWidgets import (QDialog, QFormLayout, QLineEdit, 
+                                   QDialogButtonBox, QVBoxLayout)
+        
+        class MetadataDialog(QDialog):
+            def __init__(self, current_metadata, parent=None):
+                super().__init__(parent)
+                self.setWindowTitle("Edit PDF Metadata")
+                self.setMinimumWidth(400)
+                
+                layout = QVBoxLayout()
+                form_layout = QFormLayout()
+                
+                # Create editable fields for each metadata property
+                self.fields = {}
+                for key, value in current_metadata.items():
+                    if key.startswith('/'):
+                        display_key = key[1:]  # Remove leading slash
+                        field = QLineEdit(str(value))
+                        form_layout.addRow(display_key, field)
+                        self.fields[key] = field
+                
+                # Add buttons
+                button_box = QDialogButtonBox(
+                    QDialogButtonBox.StandardButton.Save | 
+                    QDialogButtonBox.StandardButton.Cancel
+                )
+                button_box.accepted.connect(self.accept)
+                button_box.rejected.connect(self.reject)
+                
+                layout.addLayout(form_layout)
+                layout.addWidget(button_box)
+                self.setLayout(layout)
+            
+            def get_metadata(self) -> Dict[str, str]:
+                """Get edited metadata from fields"""
+                return {
+                    key: field.text() 
+                    for key, field in self.fields.items()
+                }
+        
+        try:
+            # Get current metadata
+            current_metadata = self.get_current_metadata(pdf_path) or {}
+            
+            # Show dialog
+            dialog = MetadataDialog(current_metadata, self.parent_window)
+            if dialog.exec() == QDialog.DialogCode.Accepted:
+                # Get edited metadata
+                new_metadata = dialog.get_metadata()
+                self.edit_metadata(pdf_path, new_metadata)
+                
+        except Exception as e:
+            self.parent_window.show_status_message(
+                f"Metadata error: {str(e)}", 
+                5000
+            )
+
     def edit_metadata(self, pdf_path: str, new_metadata: Dict[str, Any]) -> None:
         """
         Edit PDF metadata with validation and backup.
