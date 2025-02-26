@@ -77,7 +77,7 @@ class Metadata:
             raise MetadataError(f"Failed to create backup: {str(e)}")
 
     def show_metadata_dialog(self, pdf_path: str) -> None:
-        """Show metadata editing dialog"""
+        """Show metadata editing dialog with all standard PDF metadata fields"""
         from PyQt6.QtWidgets import (QDialog, QFormLayout, QLineEdit, 
                                    QDialogButtonBox, QVBoxLayout)
         
@@ -85,19 +85,41 @@ class Metadata:
             def __init__(self, current_metadata, parent=None):
                 super().__init__(parent)
                 self.setWindowTitle("Edit PDF Metadata")
-                self.setMinimumWidth(400)
+                self.setMinimumWidth(500)
                 
                 layout = QVBoxLayout()
                 form_layout = QFormLayout()
                 
-                # Create editable fields for each metadata property
+                # Standard PDF metadata fields with descriptions
+                metadata_fields = {
+                    '/Title': 'Document title',
+                    '/Author': 'Author name(s)',
+                    '/Subject': 'Document subject',
+                    '/Keywords': 'Comma-separated keywords',
+                    '/Creator': 'Creating application',
+                    '/Producer': 'Producing application',
+                    '/CreationDate': 'Document creation date (D:YYYYMMDDHHmmSS)',
+                    '/ModDate': 'Document modification date (D:YYYYMMDDHHmmSS)',
+                    '/Trapped': 'Document trapping status (True/False)'
+                }
+                
+                # Create editable fields for all standard metadata properties
                 self.fields = {}
-                for key, value in current_metadata.items():
-                    if key.startswith('/'):
-                        display_key = key[1:]  # Remove leading slash
-                        field = QLineEdit(str(value))
-                        form_layout.addRow(display_key, field)
-                        self.fields[key] = field
+                for key, description in metadata_fields.items():
+                    # Create label with description
+                    label = QLabel(f"{key[1:]}:")
+                    label.setToolTip(description)
+                    
+                    # Create input field
+                    field = QLineEdit()
+                    field.setToolTip(description)
+                    
+                    # Pre-populate with current value if exists
+                    if key in current_metadata:
+                        field.setText(str(current_metadata[key]))
+                        
+                    form_layout.addRow(label, field)
+                    self.fields[key] = field
                 
                 # Add buttons
                 button_box = QDialogButtonBox(
