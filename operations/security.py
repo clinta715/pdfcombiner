@@ -23,7 +23,7 @@ class Security:
         if errors:
             raise ValueError("\n".join(errors))
 
-    def encrypt_pdf(self, pdf_path, password, permissions):
+    def encrypt_pdf(self, pdf_path, password, permissions=None):
         try:
             # Validate password first
             self.validate_password(password)
@@ -32,6 +32,15 @@ class Security:
             reader = PdfReader(pdf_path)
             if reader.is_encrypted:
                 raise ValueError("PDF is already encrypted")
+
+            # Set default permissions if none provided
+            if permissions is None:
+                permissions = {
+                    'printing': True,  # Allow printing
+                    'modify': False,   # Prevent modifications
+                    'copy': True,      # Allow copying text
+                    'annot-forms': True  # Allow annotations and form filling
+                }
 
             writer = PdfWriter()
             writer.append_pages_from_reader(reader)
