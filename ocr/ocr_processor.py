@@ -89,7 +89,8 @@ class OCRProcessor:
             elif output_option == "Clipboard":
                 clipboard = QApplication.clipboard()
                 clipboard.setText(ocr_text)
-                self.parent_window.show_status_message("OCR text copied to clipboard", 3000)
+                if self.parent_window:
+                    self.parent_window.show_status_message("OCR text copied to clipboard", 3000)
                 
             elif output_option == "Text window":
                 self.show_ocr_results(ocr_text)
