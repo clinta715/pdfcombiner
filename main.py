@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLa
                             QWidget, QTabWidget, QListWidget, QListWidgetItem, QMessageBox,
                             QLineEdit, QLabel, QScrollArea, QGridLayout, QPushButton,
                             QDialogButtonBox, QStatusBar, QProgressBar, QDialog, QColorDialog,
-                            QHBoxLayout)
+                            QHBoxLayout, QCheckBox)
 from PyQt6.QtCore import Qt, QMimeData, QPoint
 from PyQt6.QtGui import QPixmap, QMouseEvent, QPainter
 import fitz  # PyMuPDF
