@@ -1,5 +1,5 @@
 from PyPDF2 import PdfReader, PdfWriter
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QLabel
 from typing import Dict, Any
 import os
 from datetime import datetime
