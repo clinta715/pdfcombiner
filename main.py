@@ -400,10 +400,16 @@ class PDFCombiner(QMainWindow):
                 )
                 layout.addWidget(requirements)
                 
-                # Password input field
+                # Password input field with real-time validation
                 self.password_edit = QLineEdit()
                 self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
+                self.password_edit.textChanged.connect(self.validate_password)
                 layout.addWidget(self.password_edit)
+                
+                # Validation status label
+                self.validation_label = QLabel()
+                self.validation_label.setStyleSheet("color: red; font-size: 10px;")
+                layout.addWidget(self.validation_label)
                 
                 # Generate password button
                 generate_btn = QPushButton("Generate Password")
@@ -421,11 +427,25 @@ class PDFCombiner(QMainWindow):
                 
                 self.setLayout(layout)
             
+            def validate_password(self, password):
+                """Validate password and update status"""
+                from operations.security import Security
+                try:
+                    Security.validate_password(None, password)
+                    self.validation_label.setText("✓ Password meets requirements")
+                    self.validation_label.setStyleSheet("color: green; font-size: 10px;")
+                    return True
+                except ValueError as e:
+                    self.validation_label.setText(str(e))
+                    self.validation_label.setStyleSheet("color: red; font-size: 10px;")
+                    return False
+
             def generate_password(self):
                 """Generate and set a random password"""
                 from utils.utils import generate_password
                 password = generate_password()
                 self.password_edit.setText(password)
+                self.validate_password(password)
             
             def get_password(self):
                 return self.password_edit.text()
@@ -436,7 +456,7 @@ class PDFCombiner(QMainWindow):
             return
             
         password = dialog.get_password()
-        if not password:
+        if not password or not dialog.validate_password(password):
             return
             
         # Show confirmation dialog with password visible
