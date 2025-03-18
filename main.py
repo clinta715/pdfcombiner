@@ -9,75 +9,24 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QMenuBar, QMenu, QVBoxLa
                             QHBoxLayout, QCheckBox, QInputDialog)
 from PyQt6.QtGui import QColor, QPixmap, QPainter
 from PyQt6.QtCore import Qt, QMimeData, QPoint
-from PyQt6.QtCore import Qt, QMimeData, QPoint
 from PyQt6.QtGui import QPixmap, QMouseEvent, QPainter
+from PyPDF2.constants import UserAccessPermissions
+from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
+from PyQt6.QtPdf import QPdfDocument
+
 import fitz  # PyMuPDF
 import tempfile
 
-class DraggableThumbnail(QWidget):
-    """Custom widget for draggable thumbnails"""
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.parent = parent
-        self.drag_start_position = QPoint()
-        self.setStyleSheet("""
-            QWidget {
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                padding: 5px;
-                background-color: white;
-            }
-            QWidget:hover {
-                border: 1px solid #888;
-                background-color: #f0f0f0;
-            }
-        """)
+from password_dialog import PasswordDialog
+from permissions_dialog import PermissionsDialog
+from ocrsettingsdialog import OCRSettingsDialog
+from draggablethumbnail import DraggableThumbnail
+from pdfpreviewdialog import PDFPreviewDialog
 
-    def mousePressEvent(self, event: QMouseEvent):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.drag_start_position = event.position().toPoint()
-
-    def mouseMoveEvent(self, event: QMouseEvent):
-        if not (event.buttons() & Qt.MouseButton.LeftButton):
-            return
-        if (event.position().toPoint() - self.drag_start_position).manhattanLength() < 10:
-            return
-            
-        # Get the current position in the grid
-        layout = self.parent.thumbnail_layout
-        index = layout.indexOf(self)
-        
-        # Calculate new position based on mouse
-        pos = self.mapToParent(event.position().toPoint())
-        
-        # Find the widget under the mouse position
-        target_index = -1
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if item and item.geometry().contains(pos):
-                target_index = i
-                break
-                
-        # If we found a target position and it's different from current
-        if target_index != -1 and target_index != index:
-            # Remove all widgets from layout
-            widgets = []
-            while layout.count():
-                item = layout.takeAt(0)
-                if item.widget():
-                    widgets.append(item.widget())
-            
-            # Reorder widgets
-            widgets.insert(target_index, widgets.pop(index))
-            
-            # Add widgets back in new order
-            for i, widget in enumerate(widgets):
-                row = i // 3
-                col = i % 3
-                layout.addWidget(widget, row, col)
-            
-            # Update the order of PDF paths
-            self.parent.update_pdf_order()
+from operations.security import Security
+from operations.compression import PDFCompressor
+from operations.redaction import Redaction
+from operations.pdf_operations import PDFOperations
 
 class PDFCombiner(QMainWindow):
     def __init__(self):
@@ -233,96 +182,8 @@ class PDFCombiner(QMainWindow):
         if not pdf_paths:
             QMessageBox.warning(self, "No Files", "Please add PDF files first")
             return
-            
-        # Create OCR settings dialog
-        from PyQt6.QtWidgets import QDialog, QFormLayout, QSpinBox, QDoubleSpinBox, QComboBox, QCheckBox
         
-        class OCRSettingsDialog(QDialog):
-            def __init__(self, parent=None):
-                super().__init__(parent)
-                self.setWindowTitle("OCR Settings")
-                self.setMinimumWidth(400)
-                
-                layout = QFormLayout()
-                
-                # Language selection
-                self.language_combo = QComboBox()
-                self.language_combo.addItems(["eng", "fra", "spa", "deu", "ita"])
-                layout.addRow("Language:", self.language_combo)
-                
-                # Quality level
-                self.quality_combo = QComboBox()
-                self.quality_combo.addItems(["Fast", "Balanced", "Best"])
-                self.quality_combo.setCurrentIndex(1)
-                layout.addRow("Quality:", self.quality_combo)
-                
-                # Page segmentation mode
-                self.psm_combo = QComboBox()
-                self.psm_combo.addItems([
-                    "0 = Orientation and script detection (OSD) only",
-                    "1 = Automatic page segmentation with OSD",
-                    "2 = Automatic page segmentation, but no OSD, or OCR",
-                    "3 = Fully automatic page segmentation, but no OSD (Default)",
-                    "4 = Assume a single column of text of variable sizes",
-                    "5 = Assume a single uniform block of vertically aligned text",
-                    "6 = Assume a single uniform block of text",
-                    "7 = Treat the image as a single text line",
-                    "8 = Treat the image as a single word",
-                    "9 = Treat the image as a single word in a circle",
-                    "10 = Treat the image as a single character"
-                ])
-                self.psm_combo.setCurrentIndex(3)
-                layout.addRow("Page Segmentation:", self.psm_combo)
-                
-                # Image processing options
-                self.deskew_check = QCheckBox("Auto deskew")
-                self.deskew_check.setChecked(True)
-                layout.addRow(self.deskew_check)
-                
-                self.clean_check = QCheckBox("Clean images")
-                self.clean_check.setChecked(True)
-                layout.addRow(self.clean_check)
-                
-                # Contrast adjustment
-                self.contrast_spin = QDoubleSpinBox()
-                self.contrast_spin.setRange(0.5, 2.0)
-                self.contrast_spin.setValue(1.0)
-                self.contrast_spin.setSingleStep(0.1)
-                layout.addRow("Contrast:", self.contrast_spin)
-                
-                # Brightness adjustment
-                self.brightness_spin = QDoubleSpinBox()
-                self.brightness_spin.setRange(0.5, 2.0)
-                self.brightness_spin.setValue(1.0)
-                self.brightness_spin.setSingleStep(0.1)
-                layout.addRow("Brightness:", self.brightness_spin)
-                
-                # Threshold
-                self.threshold_spin = QSpinBox()
-                self.threshold_spin.setRange(0, 255)
-                self.threshold_spin.setValue(0)
-                self.threshold_spin.setSpecialValueText("Auto")
-                layout.addRow("Threshold:", self.threshold_spin)
-                
-                # Output destination
-                self.output_combo = QComboBox()
-                self.output_combo.addItems([
-                    "Text file (auto-named)",
-                    "Clipboard",
-                    "Text window",
-                    "New PDF file"
-                ])
-                layout.addRow("Output Destination:", self.output_combo)
-                
-                # Buttons
-                self.button_box = QDialogButtonBox(
-                    QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-                )
-                self.button_box.accepted.connect(self.accept)
-                self.button_box.rejected.connect(self.reject)
-                layout.addRow(self.button_box)
-                
-                self.setLayout(layout)
+
         
         # Show settings dialog
         dialog = OCRSettingsDialog(self)
@@ -371,162 +232,71 @@ class PDFCombiner(QMainWindow):
 
     def encrypt_pdf(self):
         """Handle PDF encryption"""
-        from operations.security import Security
-        from PyQt6.QtWidgets import QInputDialog
-        
+
+        # Define UserAccessPermissions class with correct bit positions
+        class UserAccessPermissions:
+            PRINT = 1 << 2  # Bit 3 (0-based index: 2)
+            MODIFY = 1 << 3  # Bit 4 (0-based index: 3)
+            MODIFY_ANNOTATIONS = 1 << 4  # Bit 5 (0-based index: 4)
+            FILL_FORMS = 1 << 5  # Bit 6 (0-based index: 5)
+            EXTRACT = 1 << 8  # Bit 9 (0-based index: 8)
+
         # Get selected files from thumbnails
-        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
+        pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count())
                     if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
-        
+
         if not pdf_paths:
             QMessageBox.warning(self, "No Files", "Please add PDF files first")
             return
-            
-        # Create password dialog with generate button
-        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout
-        
-        class PasswordDialog(QDialog):
-            def __init__(self, parent=None):
-                super().__init__(parent)
-                self.setWindowTitle("Encrypt PDF")
-                self.setMinimumWidth(400)
-                
-                layout = QVBoxLayout()
-                
-                # Password requirements label
-                requirements = QLabel(
-                    "Password must be at least 8 characters with:\n"
-                    "- One uppercase letter\n"
-                    "- One lowercase letter\n"
-                    "- One digit"
-                )
-                layout.addWidget(requirements)
-                
-                # Password input field with real-time validation
-                self.password_edit = QLineEdit()
-                self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
-                self.password_edit.textChanged.connect(self.validate_password)
-                layout.addWidget(self.password_edit)
-                
-                # Validation status label
-                self.validation_label = QLabel()
-                self.validation_label.setStyleSheet("color: red; font-size: 10px;")
-                layout.addWidget(self.validation_label)
-                
-                # Generate password button
-                generate_btn = QPushButton("Generate Password")
-                generate_btn.clicked.connect(self.generate_password)
-                layout.addWidget(generate_btn)
-                
-                # Buttons
-                button_box = QDialogButtonBox(
-                    QDialogButtonBox.StandardButton.Ok | 
-                    QDialogButtonBox.StandardButton.Cancel
-                )
-                button_box.accepted.connect(self.accept)
-                button_box.rejected.connect(self.reject)
-                layout.addWidget(button_box)
-                
-                self.setLayout(layout)
-            
-            def validate_password(self, password):
-                """Validate password and update status"""
-                from operations.security import Security
-                try:
-                    Security.validate_password(None, password)
-                    self.validation_label.setText("✓ Password meets requirements")
-                    self.validation_label.setStyleSheet("color: green; font-size: 10px;")
-                    return True
-                except ValueError as e:
-                    self.validation_label.setText(str(e))
-                    self.validation_label.setStyleSheet("color: red; font-size: 10px;")
-                    return False
 
-            def generate_password(self):
-                """Generate and set a random password"""
-                from utils.utils import generate_password
-                password = generate_password()
-                self.password_edit.setText(password)
-                self.validate_password(password)
-            
-            def get_password(self):
-                return self.password_edit.text()
-        
         # Show password dialog
         dialog = PasswordDialog(self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
-            
+
         password = dialog.get_password()
         if not password or not dialog.validate_password(password):
             return
-            
+
         # Show confirmation dialog with password visible
         confirm_password, ok = QInputDialog.getText(
-            self, 
-            "Confirm Password", 
-            f"Confirm password (generated: {password}):", 
+            self,
+            "Confirm Password",
+            f"Confirm password (generated: {password}):",
             echo=QLineEdit.EchoMode.Normal
         )
         if not ok or password != confirm_password:
             QMessageBox.warning(self, "Error", "Passwords do not match")
             return
-            
-        # Create permissions dialog
-        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QCheckBox, QDialogButtonBox
-        
-        class PermissionsDialog(QDialog):
-            def __init__(self, parent=None):
-                super().__init__(parent)
-                self.setWindowTitle("Set PDF Permissions")
-                self.setMinimumWidth(300)
-                
-                layout = QVBoxLayout()
-                
-                # Add permission checkboxes
-                self.print_check = QCheckBox("Allow Printing")
-                self.print_check.setChecked(True)
-                layout.addWidget(self.print_check)
-                
-                self.modify_check = QCheckBox("Allow Modifications")
-                layout.addWidget(self.modify_check)
-                
-                self.copy_check = QCheckBox("Allow Copying Text")
-                self.copy_check.setChecked(True)
-                layout.addWidget(self.copy_check)
-                
-                self.annot_check = QCheckBox("Allow Annotations and Forms")
-                self.annot_check.setChecked(True)
-                layout.addWidget(self.annot_check)
-                
-                # Add buttons
-                button_box = QDialogButtonBox(
-                    QDialogButtonBox.StandardButton.Ok | 
-                    QDialogButtonBox.StandardButton.Cancel
-                )
-                button_box.accepted.connect(self.accept)
-                button_box.rejected.connect(self.reject)
-                layout.addWidget(button_box)
-                
-                self.setLayout(layout)
-            
-            def get_permissions(self):
-                """Get selected permissions"""
-                return {
-                    'printing': self.print_check.isChecked(),
-                    'modify': self.modify_check.isChecked(),
-                    'copy': self.copy_check.isChecked(),
-                    'annot-forms': self.annot_check.isChecked()
-                }
-        
+
         # Show permissions dialog
         permissions_dialog = PermissionsDialog(self)
         if permissions_dialog.exec() != QDialog.DialogCode.Accepted:
             return
-            
+
         # Get selected permissions
         permissions = permissions_dialog.get_permissions()
-        
+
+        # Set default permissions if none provided
+        if permissions is None:
+            permissions = {
+                'printing': True,  # Allow printing
+                'modify': False,   # Prevent modifications
+                'copy': True,      # Allow copying text
+                'annot-forms': True  # Allow annotations and form filling
+            }
+
+        # Convert your permissions dictionary to the appropriate flags
+        permissions_flag = 0
+        if permissions.get('printing', False):
+            permissions_flag |= UserAccessPermissions.PRINT
+        if permissions.get('modify', False):
+            permissions_flag |= UserAccessPermissions.MODIFY
+        if permissions.get('copy', False):
+            permissions_flag |= UserAccessPermissions.EXTRACT
+        if permissions.get('annot-forms', False):
+            permissions_flag |= UserAccessPermissions.MODIFY_ANNOTATIONS | UserAccessPermissions.FILL_FORMS
+
         # Create security instance and validate password
         security = Security(self)
         try:
@@ -534,28 +304,24 @@ class PDFCombiner(QMainWindow):
         except ValueError as e:
             QMessageBox.warning(self, "Invalid Password", str(e))
             return
-                
+
         # Encrypt each file
         success_count = 0
         for pdf_path in pdf_paths:
             try:
-                if security.encrypt_pdf(pdf_path, password, permissions):
+                if security.encrypt_pdf(pdf_path, password, permissions_flag):
                     success_count += 1
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Could not encrypt PDF: {str(e)}")
-            
+
         if success_count > 0:
             QMessageBox.information(
-                self, 
-                "Success", 
+                self,
+                "Success",
                 f"Successfully encrypted {success_count} PDF(s)"
             )
 
     def compress_pdf(self):
-        """Handle PDF compression"""
-        from operations.compression import PDFCompressor
-        from PyQt6.QtWidgets import QInputDialog
-        
         # Get selected files from thumbnails
         pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
                     if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
@@ -592,10 +358,6 @@ class PDFCombiner(QMainWindow):
                     f"Could not compress PDF: {str(e)}")
 
     def decrypt_pdf(self):
-        """Handle PDF decryption"""
-        from operations.security import Security
-        from PyQt6.QtWidgets import QInputDialog
-        
         # Get selected files from thumbnails
         pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
                     if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
@@ -619,10 +381,6 @@ class PDFCombiner(QMainWindow):
                 QMessageBox.critical(self, "Error", f"Could not decrypt PDF: {str(e)}")
 
     def redact_pdf(self):
-        """Handle PDF redaction"""
-        from operations.redaction import Redaction
-        from PyQt6.QtWidgets import QInputDialog, QFileDialog
-        
         # Get selected files from thumbnails
         pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
                     if hasattr(widget := self.thumbnail_layout.itemAt(i).widget(), 'pdf_path')]
@@ -904,7 +662,6 @@ class PDFCombiner(QMainWindow):
 
     def show_context_menu(self, container, pos):
         """Show context menu for removing items"""
-        from PyQt6.QtWidgets import QMenu
         
         menu = QMenu(self)
         remove_action = menu.addAction("Remove")
@@ -926,64 +683,12 @@ class PDFCombiner(QMainWindow):
         self.update_pdf_order()
 
     def preview_pdf(self, pdf_path):
-        """Preview PDF in a separate window"""
-        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QScrollArea
-        from PyQt6.QtGui import QPixmap
-        from PyQt6.QtCore import Qt
-        import fitz
-        
-        class PDFPreviewDialog(QDialog):
-            def __init__(self, pdf_path, parent=None):
-                super().__init__(parent)
-                self.setWindowTitle(f"Preview - {os.path.basename(pdf_path)}")
-                self.setMinimumSize(800, 600)
-                
-                layout = QVBoxLayout()
-                self.scroll = QScrollArea()
-                self.scroll.setWidgetResizable(True)
-                layout.addWidget(self.scroll)
-                
-                # Create container for pages
-                self.pages_container = QWidget()
-                self.pages_layout = QVBoxLayout()
-                self.pages_container.setLayout(self.pages_layout)
-                self.scroll.setWidget(self.pages_container)
-                
-                self.setLayout(layout)
-                self.load_pdf(pdf_path)
-            
-            def load_pdf(self, pdf_path):
-                """Load and display PDF pages"""
-                try:
-                    doc = fitz.open(pdf_path)
-                    for page_num in range(len(doc)):
-                        page = doc.load_page(page_num)
-                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # Higher resolution for preview
-                        
-                        # Create QLabel for the page
-                        label = QLabel()
-                        pixmap = QPixmap()
-                        pixmap.loadFromData(pix.tobytes())
-                        label.setPixmap(pixmap)
-                        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                        
-                        # Add page number label
-                        page_label = QLabel(f"Page {page_num + 1}")
-                        page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                        
-                        # Add to layout
-                        self.pages_layout.addWidget(page_label)
-                        self.pages_layout.addWidget(label)
-                except Exception as e:
-                    QMessageBox.critical(self, "Error", f"Could not load PDF: {str(e)}")
-        
         # Create and show preview dialog
         preview = PDFPreviewDialog(pdf_path, self)
         preview.exec()
         
     def combine_pdfs(self):
         """Handle PDF combining operation"""
-        from PyQt6.QtWidgets import QFileDialog
         
         # Get PDF paths from thumbnails
         pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
@@ -1005,8 +710,6 @@ class PDFCombiner(QMainWindow):
             return
             
         try:
-            from operations.pdf_operations import PDFOperations
-            
             # Update status
             self.show_status_message("Starting PDF combination...")
             self.update_status_label("Combining PDFs")
@@ -1034,8 +737,6 @@ class PDFCombiner(QMainWindow):
 
     def print_pdf(self):
         """Handle PDF printing"""
-        from PyQt6.QtPrintSupport import QPrintDialog, QPrinter
-        from PyQt6.QtWidgets import QFileDialog
         
         # Get selected files from thumbnails
         pdf_paths = [widget.pdf_path for i in range(self.thumbnail_layout.count()) 
@@ -1053,7 +754,6 @@ class PDFCombiner(QMainWindow):
             try:
                 for pdf_path in pdf_paths:
                     # Print each PDF
-                    from PyQt6.QtGui import QPdfDocument
                     document = QPdfDocument(self)
                     document.load(pdf_path)
                     
