@@ -1,5 +1,5 @@
 from PyPDF2 import PdfWriter, PdfReader
-from PyQt6.QtWidgets import QMessageBox, QApplication
+from PyQt6.QtWidgets import QMessageBox, QApplication, QDialogButtonBox
 
 class Security:
     def __init__(self, parent_window=None):
@@ -23,7 +23,7 @@ class Security:
         if errors:
             raise ValueError("\n".join(errors))
 
-    def encrypt_pdf(self, pdf_path, password, permissions=None):
+    def encrypt_pdf(self, pdf_path, password, permissions_flag=None):
         try:
             # Validate password first
             self.validate_password(password)
@@ -49,7 +49,7 @@ class Security:
             writer.encrypt(
                 user_password=password,
                 owner_password=password + "_owner",  # Different owner password
-                permissions=permissions
+                permissions_flag=permissions
             )
 
             temp_file = pdf_path + '.tmp'
